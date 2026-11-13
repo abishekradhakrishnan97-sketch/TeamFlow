@@ -5,6 +5,7 @@ import { Button } from '@/components/shared/Button';
 import { Modal } from '@/components/shared/Modal';
 import { StatusBadge, PriorityBadge } from '@/components/shared/Badge';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { supabase } from '@/services/supabase/client';
 import {
   getProjectById,
   updateProject,
@@ -105,8 +106,36 @@ export const ProjectDetails: React.FC = () => {
   const loadProjectData = async (projId: string) => {
     try {
       setLoading(true);
-      const [proj, t, r, d, a, w, e, extraW, extA] = await Promise.all([
-        getProjectById(projId),
+
+      // 1. Fetch project with resilient fallback
+      let proj: Project | null = null;
+      try {
+        proj = await getProjectById(projId);
+      } catch (pErr) {
+        console.warn('getProjectById caught error:', pErr);
+      }
+
+      if (!proj) {
+        try {
+          const { data: directData } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', projId)
+            .maybeSingle();
+          if (directData) {
+            proj = directData as Project;
+          }
+        } catch (dirErr) {
+          console.warn('Direct project fetch failed:', dirErr);
+        }
+      }
+
+      if (proj) {
+        setProject(proj);
+      }
+
+      // 2. Fetch auxiliary lists safely via allSettled so no secondary failure blocks rendering
+      const settled = await Promise.allSettled([
         getTasks({ projectId: projId }),
         getRevisions(projId),
         getDeliveries(projId),
@@ -117,17 +146,27 @@ export const ProjectDetails: React.FC = () => {
         getExtendedAvailability({ projectId: projId }),
       ]);
 
-      setProject(proj);
-      setTasks(t);
-      setRevisions(r);
-      setDeliveries(d);
-      setActivities(a);
-      setWorkstreams(w);
-      setEmployees(e);
-      setExtraWorkRecords(extraW);
-      setExtendedRecords(extA);
+      const [
+        tasksRes,
+        revisionsRes,
+        deliveriesRes,
+        activitiesRes,
+        workstreamsRes,
+        employeesRes,
+        extraWorkRes,
+        extendedRes,
+      ] = settled;
+
+      if (tasksRes.status === 'fulfilled') setTasks(tasksRes.value || []);
+      if (revisionsRes.status === 'fulfilled') setRevisions(revisionsRes.value || []);
+      if (deliveriesRes.status === 'fulfilled') setDeliveries(deliveriesRes.value || []);
+      if (activitiesRes.status === 'fulfilled') setActivities(activitiesRes.value || []);
+      if (workstreamsRes.status === 'fulfilled') setWorkstreams(workstreamsRes.value || []);
+      if (employeesRes.status === 'fulfilled') setEmployees(employeesRes.value || []);
+      if (extraWorkRes.status === 'fulfilled') setExtraWorkRecords(extraWorkRes.value || []);
+      if (extendedRes.status === 'fulfilled') setExtendedRecords(extendedRes.value || []);
     } catch (err) {
-      console.error(err);
+      console.error('loadProjectData error:', err);
       toast.error('Failed to load project details');
     } finally {
       setLoading(false);
@@ -227,11 +266,31 @@ export const ProjectDetails: React.FC = () => {
 
   if (!project && !loading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-sm text-secondary">Project not found or deleted.</p>
-        <Button variant="secondary" size="sm" onClick={() => navigate('/projects')} className="mt-4">
-          ← Back to Projects
-        </Button>
+      <div className="text-center py-16 px-4">
+        <div className="max-w-md mx-auto p-6 bg-surface rounded-2xl border-[0.5px] border-black shadow-soft">
+          <p className="text-base font-semibold text-primary">Project Not Found</p>
+          <p className="text-xs text-secondary mt-1">
+            This project could not be found or may have been deleted.
+          </p>
+          <div className="flex items-center justify-center gap-3 mt-5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => id && loadProjectData(id)}
+              className="border-[0.5px] border-black text-xs"
+            >
+              Retry
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/projects')}
+              className="border-[0.5px] border-black text-xs"
+            >
+              ← Back to Projects
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

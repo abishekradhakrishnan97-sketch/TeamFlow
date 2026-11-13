@@ -26,6 +26,48 @@ body {
   --color-info: #AFC7E9;
 }
 
+/* 0.5px Black Outlines & Borders for UI components */
+@layer base {
+  *, ::before, ::after {
+    border-color: #000000;
+  }
+}
+
+.border {
+  border-width: 0.5px;
+  border-color: #000000;
+}
+.border-b {
+  border-bottom-width: 0.5px;
+  border-bottom-color: #000000;
+}
+.border-t {
+  border-top-width: 0.5px;
+  border-top-color: #000000;
+}
+.border-l {
+  border-left-width: 0.5px;
+  border-left-color: #000000;
+}
+.border-r {
+  border-right-width: 0.5px;
+  border-right-color: #000000;
+}
+.border-x {
+  border-left-width: 0.5px;
+  border-right-width: 0.5px;
+  border-color: #000000;
+}
+.border-y {
+  border-top-width: 0.5px;
+  border-bottom-width: 0.5px;
+  border-color: #000000;
+}
+
+input, select, textarea, table, th, td, hr {
+  border-color: #000000;
+}
+
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: #E7E1D5 transparent;

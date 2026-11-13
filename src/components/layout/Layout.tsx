@@ -10,7 +10,7 @@ export const Layout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex bg-background text-primary selection:bg-[#F2D76B]/50 selection:text-[#222222]">
+    <div className="h-screen w-screen flex bg-background text-primary selection:bg-[#F2D76B]/50 selection:text-[#222222] overflow-hidden">
       {/* Sidebar (Desktop + Mobile Drawer) */}
       <Sidebar
         onOpenQuickRequest={() => setQuickRequestOpen(true)}
@@ -19,13 +19,13 @@ export const Layout: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Topbar
           onOpenQuickRequest={() => setQuickRequestOpen(true)}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto overflow-y-auto relative z-0">
           <Outlet />
         </main>
       </div>

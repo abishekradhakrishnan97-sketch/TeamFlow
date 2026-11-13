@@ -40,7 +40,7 @@ export const App: React.FC = () => {
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:id" element={<ProjectDetails />} />
               <Route path="/tasks" element={<Tasks />} />
-              <Route path="/workflow" element={<Workflow />} />
+              <Route path="/workflow" element={<Navigate to="/dashboard" replace />} />
               <Route path="/team" element={<Team />} />
               <Route path="/team/:id" element={<EmployeeDetails />} />
               <Route path="/attendance" element={<Attendance />} />

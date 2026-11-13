@@ -43,21 +43,93 @@ export async function getProjects(options?: {
 }
 
 export async function getProjectById(id: UUID): Promise<Project | null> {
-  const { data, error } = await supabase
-    .from('projects')
-    .select(`
-      *,
-      owner:employees(*),
-      members:project_members(
-        id, role,
-        employee:employees(*)
-      )
-    `)
-    .eq('id', id)
-    .single();
+  // 1. First attempt: rich query with owner and member joins
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        owner:employees(*),
+        members:project_members(
+          id, role,
+          employee:employees(*)
+        )
+      `)
+      .eq('id', id)
+      .maybeSingle();
 
-  if (error) throw error;
-  return data;
+    if (!error && data) {
+      return data as Project;
+    }
+    if (error) {
+      console.warn('getProjectById join query failed, falling back:', error.message);
+    }
+  } catch (err) {
+    console.warn('getProjectById join query threw exception:', err);
+  }
+
+  // 2. Resilient fallback query: select base project first
+  try {
+    const { data: baseProject, error: baseErr } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (baseErr || !baseProject) {
+      console.error('getProjectById base query error or not found:', baseErr);
+      return null;
+    }
+
+    // Attempt to fetch owner and members separately without throwing
+    let owner = null;
+    if (baseProject.owner_id) {
+      try {
+        const { data: ownerData } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('id', baseProject.owner_id)
+          .maybeSingle();
+        owner = ownerData || null;
+      } catch {
+        // Safe to ignore
+      }
+    }
+
+    let members: any[] = [];
+    try {
+      const { data: memberRows } = await supabase
+        .from('project_members')
+        .select('id, role, employee_id')
+        .eq('project_id', id);
+
+      if (memberRows && memberRows.length > 0) {
+        const empIds = memberRows.map((m) => m.employee_id).filter(Boolean);
+        const { data: memberEmps } = await supabase
+          .from('employees')
+          .select('*')
+          .in('id', empIds);
+
+        const empMap = new Map((memberEmps || []).map((e: any) => [e.id, e]));
+        members = memberRows.map((m) => ({
+          id: m.id,
+          role: m.role,
+          employee: empMap.get(m.employee_id) || null,
+        }));
+      }
+    } catch {
+      // Safe to ignore
+    }
+
+    return {
+      ...baseProject,
+      owner,
+      members,
+    } as Project;
+  } catch (finalErr) {
+    console.error('getProjectById fallback completely failed:', finalErr);
+    return null;
+  }
 }
 
 export async function createProject(
@@ -84,14 +156,19 @@ export async function createProject(
     if (memberError) console.error('Failed to add project members:', memberError);
   }
 
-  await logActivity({
-    event_type: 'project_created',
-    description: `Created project "${newProject.name}"${newProject.client_name ? ` for ${newProject.client_name}` : ''}`,
-    project_id: newProject.id,
-    new_value: newProject,
-  });
+  try {
+    await logActivity({
+      event_type: 'project_created',
+      description: `Created project "${newProject.name}"${newProject.client_name ? ` for ${newProject.client_name}` : ''}`,
+      project_id: newProject.id,
+      new_value: newProject,
+    });
+  } catch (actErr) {
+    console.warn('Failed to log project created activity:', actErr);
+  }
 
-  return getProjectById(newProject.id) as Promise<Project>;
+  const fetched = await getProjectById(newProject.id);
+  return fetched || (newProject as Project);
 }
 
 export async function updateProject(

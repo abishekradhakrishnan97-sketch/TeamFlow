@@ -13,7 +13,7 @@ export default {
         sidebar: '#171717',
         primary: '#222222',
         secondary: '#77746D',
-        border: '#E7E1D5',
+        border: '#000000',
         // Pastel Semantic Tokens
         pastel: {
           pink: '#EFAED0',
@@ -26,6 +26,16 @@ export default {
         success: '#5F8745',
         warning: '#C68B1A',
         danger: '#C84C4C',
+      },
+      borderColor: {
+        DEFAULT: '#000000',
+      },
+      borderWidth: {
+        DEFAULT: '0.5px',
+        '0.5': '0.5px',
+        '1': '1px',
+        '2': '2px',
+        '4': '4px',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
