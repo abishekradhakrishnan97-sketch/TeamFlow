@@ -30,7 +30,7 @@ import {
   ExtraWorkRecord,
   HALF_DAY_LABELS,
 } from '@/types';
-import { todayIST, formatDate, getRelativeTime, getMonthRange } from '@/utils/dates';
+import { todayIST, formatDate, getMonthRange } from '@/utils/dates';
 import { formatMinutes } from '@/utils/calculations';
 import {
   FolderKanban,
@@ -38,30 +38,20 @@ import {
   CheckCircle2,
   Clock,
   AlertTriangle,
-  RotateCcw,
-  Calendar,
   Layers,
-  ArrowUpRight,
-  ShieldCheck,
-  Moon,
-  Briefcase,
-  ChevronRight,
-  Sparkles,
-  BarChart3,
-  PieChart as PieIcon,
   Plus,
+  Sparkles,
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from 'recharts';
+
+// Advanced Visualisation Components
+import { CHART_PALETTE } from '@/utils/chartTheme';
+import { ProjectStatusDonut } from '@/components/charts/ProjectStatusDonut';
+import { ProjectProgressComparison } from '@/components/charts/ProjectProgressComparison';
+import { TeamWorkloadBar } from '@/components/charts/TeamWorkloadBar';
+import { TaskAnalyticsCard } from '@/components/charts/TaskAnalyticsCard';
+import { ActivityTrendChart } from '@/components/charts/ActivityTrendChart';
+import { AttendanceAnalyticsCard } from '@/components/charts/AttendanceAnalyticsCard';
+import { ActivityTimelineView } from '@/components/charts/ActivityTimelineView';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -116,7 +106,7 @@ export const Dashboard: React.FC = () => {
         getDepartments(),
         getTasks(),
         getAttendanceByDate(today),
-        getActivityEvents({ limit: 10 }),
+        getActivityEvents({ limit: 20 }),
         getAttendanceExtensionsSummary({ startDate, endDate }),
         getAttendancePermissions({ startDate, endDate }),
         getEarlyLogoffs({ startDate, endDate }),
@@ -143,7 +133,7 @@ export const Dashboard: React.FC = () => {
   };
 
   // Metrics computation
-  const activeProjects = projects.filter((p) => p.status === 'active');
+  const activeProjects = projects.filter((p) => p.status === 'active' || p.status === 'reopened');
   const activeEmployees = employees.filter((e) => e.status === 'active');
 
   const presentTodayCount = todayAttendance.filter(
@@ -179,99 +169,151 @@ export const Dashboard: React.FC = () => {
     return true;
   });
 
-  // Chart Data 1: Project Status Distribution (Donut Chart)
-  const projectStatusData = useMemo(() => {
-    const counts: Record<string, number> = {
-      Active: 0,
-      'Under Review': 0,
-      'On Hold': 0,
-      Delivered: 0,
-      Reopened: 0,
-    };
-    projects.forEach((p) => {
-      if (p.status === 'active') counts.Active++;
-      else if (p.status === 'under_review') counts['Under Review']++;
-      else if (p.status === 'on_hold') counts['On Hold']++;
-      else if (p.status === 'delivered') counts.Delivered++;
-      else if (p.status === 'reopened') counts.Reopened++;
-    });
+  // KPI Micro-Visualisation 1: Active Projects Status Bar
+  const projectsMicroVisual = useMemo(() => {
+    const total = projects.length;
+    if (total === 0) return null;
+    const active = projects.filter((p) => p.status === 'active').length;
+    const review = projects.filter((p) => p.status === 'under_review').length;
+    const delivered = projects.filter((p) => p.status === 'delivered').length;
+    const hold = projects.filter((p) => p.status === 'on_hold').length;
 
-    return [
-      { name: 'Active', value: counts.Active, color: '#AFC7E9' },
-      { name: 'Under Review', value: counts['Under Review'], color: '#EFAED0' },
-      { name: 'Delivered', value: counts.Delivered, color: '#A9BB78' },
-      { name: 'On Hold', value: counts['On Hold'], color: '#F2D76B' },
-      { name: 'Reopened', value: counts.Reopened, color: '#C84C4C' },
-    ].filter((item) => item.value > 0);
+    return (
+      <div className="space-y-1.5">
+        <div className="w-full h-1.5 rounded-full bg-[#EEE9DD] overflow-hidden flex border-[0.5px] border-black/15">
+          <div style={{ width: `${(active / total) * 100}%`, backgroundColor: CHART_PALETTE.pink.base }} />
+          <div style={{ width: `${(review / total) * 100}%`, backgroundColor: CHART_PALETTE.purple.base }} />
+          <div style={{ width: `${(delivered / total) * 100}%`, backgroundColor: CHART_PALETTE.green.base }} />
+          <div style={{ width: `${(hold / total) * 100}%`, backgroundColor: CHART_PALETTE.yellow.base }} />
+        </div>
+        <div className="flex items-center justify-between text-[10px] text-secondary font-medium">
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.pink.base }} />
+            Active: <strong>{active}</strong>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.purple.base }} />
+            Review: <strong>{review}</strong>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.green.base }} />
+            Delivered: <strong>{delivered}</strong>
+          </span>
+        </div>
+      </div>
+    );
   }, [projects]);
 
-  // Chart Data 2: Task Distribution by Priority & State
-  const taskDistributionData = useMemo(() => {
-    const notStarted = tasks.filter((t) => t.status === 'not_started').length;
-    const working = tasks.filter((t) => t.status === 'working').length;
-    const review = tasks.filter(
-      (t) => t.status === 'ready_for_review' || t.status === 'changes_requested'
-    ).length;
-    const blocked = tasks.filter((t) => t.status === 'blocked').length;
-    const completed = tasks.filter((t) => t.status === 'completed').length;
+  // KPI Micro-Visualisation 2: Attendance Distribution Bar
+  const attendanceMicroVisual = useMemo(() => {
+    const total = activeEmployees.length;
+    if (total === 0) return null;
+    const present = presentTodayCount;
+    const leave = onLeaveTodayCount;
+    const unrecorded = Math.max(total - todayAttendance.length, 0);
 
-    return [
-      { stage: 'Not Started', count: notStarted, fill: '#EEE9DD' },
-      { stage: 'Working', count: working, fill: '#AFC7E9' },
-      { stage: 'In Review', count: review, fill: '#F2D76B' },
-      { stage: 'Blocked', count: blocked, fill: '#EFAED0' },
-      { stage: 'Completed', count: completed, fill: '#A9BB78' },
-    ];
-  }, [tasks]);
+    return (
+      <div className="space-y-1.5">
+        <div className="w-full h-1.5 rounded-full bg-[#EEE9DD] overflow-hidden flex border-[0.5px] border-black/15">
+          <div style={{ width: `${(present / total) * 100}%`, backgroundColor: CHART_PALETTE.green.base }} />
+          <div style={{ width: `${(leave / total) * 100}%`, backgroundColor: CHART_PALETTE.blue.base }} />
+          <div style={{ width: `${(unrecorded / total) * 100}%`, backgroundColor: CHART_PALETTE.coral.base }} />
+        </div>
+        <div className="flex items-center justify-between text-[10px] text-secondary font-medium">
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.green.base }} />
+            Present: <strong>{present}</strong>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.blue.base }} />
+            Leave: <strong>{leave}</strong>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.coral.base }} />
+            Unrecorded: <strong>{unrecorded}</strong>
+          </span>
+        </div>
+      </div>
+    );
+  }, [activeEmployees, presentTodayCount, onLeaveTodayCount, todayAttendance]);
 
-  // Chart Data 3: Extra Hours Breakdown
-  const extraHoursChartData = useMemo(() => {
-    return [
-      {
-        name: 'Late Active',
-        hours: Number((extSummary.extendedActiveMinutes / 60).toFixed(1)),
-        fill: '#AFC7E9',
-      },
-      {
-        name: 'Late Standby',
-        hours: Number((extSummary.extendedStandbyMinutes / 60).toFixed(1)),
-        fill: '#EEE9DD',
-      },
-      {
-        name: 'Saturday',
-        hours: Number((extSummary.saturdayExtraMinutes / 60).toFixed(1)),
-        fill: '#EFAED0',
-      },
-      {
-        name: 'Sunday',
-        hours: Number((extSummary.sundayExtraMinutes / 60).toFixed(1)),
-        fill: '#F2D76B',
-      },
-    ];
-  }, [extSummary]);
+  // KPI Micro-Visualisation 3: Tasks Pipeline Bar
+  const tasksMicroVisual = useMemo(() => {
+    const total = tasks.length;
+    if (total === 0) return null;
+    const working = inProgressTasks.length;
+    const review = reviewTasks.length;
+    const completed = completedTasks.length;
+    const blocked = blockedTasks.length;
+
+    return (
+      <div className="space-y-1.5">
+        <div className="w-full h-1.5 rounded-full bg-[#EEE9DD] overflow-hidden flex border-[0.5px] border-black/15">
+          <div style={{ width: `${(working / total) * 100}%`, backgroundColor: CHART_PALETTE.pink.base }} />
+          <div style={{ width: `${(review / total) * 100}%`, backgroundColor: CHART_PALETTE.purple.base }} />
+          <div style={{ width: `${(completed / total) * 100}%`, backgroundColor: CHART_PALETTE.green.base }} />
+          <div style={{ width: `${(blocked / total) * 100}%`, backgroundColor: CHART_PALETTE.coral.base }} />
+        </div>
+        <div className="flex items-center justify-between text-[10px] text-secondary font-medium">
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.pink.base }} />
+            Working: <strong>{working}</strong>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.purple.base }} />
+            Review: <strong>{review}</strong>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.green.base }} />
+            Done: <strong>{completed}</strong>
+          </span>
+        </div>
+      </div>
+    );
+  }, [tasks, inProgressTasks, reviewTasks, completedTasks, blockedTasks]);
+
+  // KPI Micro-Visualisation 4: Approvals & Authorizations Strip
+  const approvalsMicroVisual = useMemo(() => {
+    return (
+      <div className="flex items-center justify-between text-[10px] font-medium text-secondary">
+        <span className="flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.yellow.base }} />
+          Perms: <strong>{extSummary.halfDayPermissionsCount || 0}</strong>
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.blue.base }} />
+          Late Hrs: <strong>{recentExtended.length}</strong>
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.coral.base }} />
+          Early: <strong>{extSummary.earlyLogoffsCount || 0}</strong>
+        </span>
+      </div>
+    );
+  }, [extSummary, recentExtended]);
 
   return (
     <div className="space-y-8">
-      {/* 1. WELCOME & OPERATIONAL PULSE BANNER */}
-      <div className="bg-surface rounded-3xl border border-border p-6 sm:p-8 shadow-soft relative overflow-hidden">
+      {/* 1. EXECUTIVE OPERATIONAL PULSE BANNER */}
+      <div className="bg-surface rounded-3xl border-[0.5px] border-black p-6 sm:p-8 shadow-soft relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-[#EEE9DD] text-xs font-semibold text-secondary inline-flex items-center gap-1.5 border border-border">
-                <Sparkles className="w-3.5 h-3.5 text-[#F2D76B] fill-[#F2D76B]" />
+              <span className="px-3 py-1 rounded-full bg-[#EEE9DD] text-xs font-bold text-primary inline-flex items-center gap-1.5 border-[0.5px] border-black">
+                <Sparkles className="w-3.5 h-3.5 text-[#C68B1A] fill-[#F2D76B]" />
                 <span>Executive Operations Centre</span>
               </span>
-              <span className="text-xs text-secondary font-medium">
+              <span className="text-xs text-secondary font-semibold">
                 {formatDate(todayIST())}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-primary tracking-tight">
               {greeting}, Design Lead.
             </h1>
             <p className="text-sm text-secondary leading-relaxed">
-              Here is your live team operational summary. Currently overseeing{' '}
-              <strong className="text-primary font-semibold">{activeProjects.length} active projects</strong> with{' '}
-              <strong className="text-primary font-semibold">{presentTodayCount} of {activeEmployees.length} members present</strong> today.
+              Real-time cross-functional command centre. Overseeing{' '}
+              <strong className="text-primary font-bold">{activeProjects.length} active client projects</strong> with{' '}
+              <strong className="text-primary font-bold">{presentTodayCount} of {activeEmployees.length} members present</strong> today.
             </p>
           </div>
 
@@ -280,7 +322,7 @@ export const Dashboard: React.FC = () => {
               variant="outline"
               size="md"
               onClick={() => navigate('/attendance')}
-              className="bg-white hover:bg-gray-50 border-border text-primary font-semibold"
+              className="bg-white hover:bg-gray-50 border-[0.5px] border-black text-primary font-bold"
               icon={<Clock className="w-4 h-4 text-accent" />}
             >
               Daily Register
@@ -289,7 +331,7 @@ export const Dashboard: React.FC = () => {
               variant="primary"
               size="md"
               onClick={() => navigate('/projects')}
-              className="bg-[#222222] hover:bg-[#333333] text-white shadow-soft font-semibold"
+              className="bg-[#222222] hover:bg-[#333333] text-white shadow-soft font-bold border-[0.5px] border-black"
               icon={<Plus className="w-4 h-4" />}
             >
               Manage Projects
@@ -297,19 +339,20 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Subtle decorative background glow */}
+        {/* Decorative subtle pastel glow accents */}
         <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#F2D76B]/15 blur-3xl pointer-events-none" />
         <div className="absolute right-32 -bottom-20 w-72 h-72 rounded-full bg-[#AFC7E9]/20 blur-3xl pointer-events-none" />
       </div>
 
-      {/* 2. CORE KPI METRICS ROW */}
+      {/* 2. UPGRADED CORE KPI METRICS ROW (WITH MICRO-VISUALISATIONS) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <MetricCard
           label="Active Projects"
           value={activeProjects.length}
           icon={<FolderKanban className="w-5 h-5" />}
-          color="blue"
-          subtitle={`${projects.length} Total Registered`}
+          color="pink"
+          subtitle={`${projects.length} Total Initiatives`}
+          microVisual={projectsMicroVisual}
           onClick={() => navigate('/projects')}
         />
         <MetricCard
@@ -318,14 +361,16 @@ export const Dashboard: React.FC = () => {
           icon={<CheckCircle2 className="w-5 h-5" />}
           color="green"
           subtitle={`${onLeaveTodayCount} On Approved Leave`}
+          microVisual={attendanceMicroVisual}
           onClick={() => navigate('/attendance')}
         />
         <MetricCard
-          label="Active Tasks In Progress"
+          label="Tasks In Progress"
           value={inProgressTasks.length}
           icon={<Layers className="w-5 h-5" />}
-          color="pink"
+          color="blue"
           subtitle={`${reviewTasks.length} Ready for Review`}
+          microVisual={tasksMicroVisual}
           onClick={() => navigate('/tasks')}
         />
         <MetricCard
@@ -335,221 +380,44 @@ export const Dashboard: React.FC = () => {
           color="yellow"
           subtitle={
             extSummary.pendingApprovalsCount > 0
-              ? 'Action Required'
+              ? 'Lead Authorization Required'
               : 'All Authorizations Clear'
           }
+          microVisual={approvalsMicroVisual}
           onClick={() => navigate('/attendance')}
         />
       </div>
 
-      {/* 3. DATA VISUALISATION ROW (RECHARTS) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart 1: Project Portfolio Distribution (Donut Chart) */}
-        <Card className="p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-base font-bold text-primary flex items-center gap-2">
-                <PieIcon className="w-4 h-4 text-accent" />
-                <span>Project Status Distribution</span>
-              </h3>
-              <span className="text-xs text-secondary font-medium">
-                {projects.length} Total
-              </span>
-            </div>
-            <p className="text-xs text-secondary mb-4">
-              Current state across all active client initiatives
-            </p>
-
-            <div className="h-52 w-full relative">
-              {projectStatusData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={projectStatusData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={80}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {projectStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} stroke="#FFFDF7" strokeWidth={2} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0];
-                          return (
-                            <div className="bg-[#171717] text-[#FFFDF7] px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md border border-[#333]">
-                              {data.name}: {data.value} projects
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-xs text-secondary">
-                  No active project data to visualize
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div className="grid grid-cols-2 gap-2 pt-4 border-t border-border text-xs">
-            {projectStatusData.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                <span className="text-secondary truncate">{item.name}:</span>
-                <span className="font-bold text-primary">{item.value}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Chart 2: Task Workload Distribution by Stage (Horizontal Bars) */}
-        <Card className="p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-base font-bold text-primary flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-accent" />
-                <span>Task Workload Pipeline</span>
-              </h3>
-              <span className="text-xs text-secondary font-medium">
-                {tasks.length} Tasks
-              </span>
-            </div>
-            <p className="text-xs text-secondary mb-4">
-              Real-time velocity and bottleneck tracking
-            </p>
-
-            <div className="h-52 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={taskDistributionData} layout="vertical" margin={{ left: -15, right: 15, top: 0, bottom: 0 }}>
-                  <XAxis type="number" hide />
-                  <YAxis
-                    type="category"
-                    dataKey="stage"
-                    tick={{ fill: '#77746D', fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={85}
-                  />
-                  <Tooltip
-                    cursor={{ fill: '#EEE9DD', opacity: 0.5 }}
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-[#171717] text-[#FFFDF7] px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md border border-[#333]">
-                            {data.stage}: {data.count} tasks
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={16}>
-                    {taskDistributionData.map((entry, index) => (
-                      <Cell key={`bar-${index}`} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-4 border-t border-border text-xs">
-            <span className="text-secondary font-medium">Blocked: <strong className="text-danger">{blockedTasks.length}</strong></span>
-            <span className="text-secondary font-medium">Completed: <strong className="text-success">{completedTasks.length}</strong></span>
-          </div>
-        </Card>
-
-        {/* Chart 3: Overtime & Weekend Work Breakdown */}
-        <Card className="p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-primary flex items-center gap-2">
-                  <Moon className="w-4 h-4 text-accent" />
-                  <span>Extra Hours Logged</span>
-                </h3>
-              </div>
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-[#EEE9DD] border border-border text-primary focus:outline-none"
-              />
-            </div>
-            <p className="text-xs text-secondary mb-4">
-              Late availability vs weekend sessions ({selectedMonth})
-            </p>
-
-            <div className="h-52 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={extraHoursChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                  <XAxis dataKey="name" tick={{ fill: '#77746D', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#77746D', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-[#171717] text-[#FFFDF7] px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md border border-[#333]">
-                            {data.name}: {data.hours} hours
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Bar dataKey="hours" radius={[6, 6, 0, 0]} barSize={28}>
-                    {extraHoursChartData.map((entry, index) => (
-                      <Cell key={`cell-extra-${index}`} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-4 border-t border-border text-xs">
-            <span className="text-secondary">
-              Total Extra Work:{' '}
-              <strong className="text-primary">
-                {(
-                  (extSummary.extendedActiveMinutes +
-                    extSummary.extendedStandbyMinutes +
-                    extSummary.saturdayExtraMinutes +
-                    extSummary.sundayExtraMinutes) /
-                  60
-                ).toFixed(1)}
-                h
-              </strong>
-            </span>
-            <button
-              onClick={() => navigate('/attendance')}
-              className="text-xs text-accent font-semibold hover:underline inline-flex items-center gap-1"
-            >
-              <span>Manage Register</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </Card>
+      {/* 3. PRIMARY VISUALISATIONS: PORTFOLIO DONUT + TASK HEALTH & DEADLINE ADHERENCE */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ProjectStatusDonut projects={projects} />
+        <TaskAnalyticsCard tasks={tasks} />
       </div>
 
-      {/* 4. COMPACT ATTENDANCE EXCEPTIONS & WEEKEND WORK SECTION */}
+      {/* 4. CROSS-FUNCTIONAL PROGRESS & WORKLOAD VISUALISATIONS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ProjectProgressComparison projects={projects} tasks={tasks} limit={5} />
+        <TeamWorkloadBar employees={activeEmployees} tasks={tasks} />
+      </div>
+
+      {/* 5. VELOCITY PROGRESSION & ATTENDANCE / OVERTIME ANALYTICS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ActivityTrendChart activities={activities} tasks={tasks} />
+        <AttendanceAnalyticsCard
+          todayAttendance={todayAttendance}
+          activeEmployeeCount={activeEmployees.length}
+          extSummary={extSummary}
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+        />
+      </div>
+
+      {/* 6. COMPACT ATTENDANCE EXCEPTIONS & WEEKEND WORK SECTION */}
       {(recentPermissions.length > 0 ||
         recentEarly.length > 0 ||
         recentExtended.length > 0 ||
         recentExtraWork.length > 0) && (
-        <Card className="p-6 space-y-4">
+        <Card className="p-6 space-y-4 border-[0.5px] border-black bg-surface">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h3 className="text-base font-bold text-primary">
@@ -563,7 +431,7 @@ export const Dashboard: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => navigate('/attendance')}
-              className="bg-white hover:bg-gray-50 border-border text-xs font-semibold self-start sm:self-auto"
+              className="bg-white hover:bg-gray-50 border-[0.5px] border-black text-xs font-bold self-start sm:self-auto"
             >
               Full Register & Approvals
             </Button>
@@ -571,7 +439,7 @@ export const Dashboard: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
             {/* Half-Day Permissions Card */}
-            <div className="p-4 rounded-xl border border-border bg-[#FFFDF7] space-y-2.5">
+            <div className="p-4 rounded-xl border-[0.5px] border-black/20 bg-[#FFFDF7] space-y-2.5">
               <div className="flex items-center justify-between font-bold text-primary">
                 <span>Half-Day Perms</span>
                 <span className="text-[11px] text-accent font-semibold">
@@ -586,7 +454,7 @@ export const Dashboard: React.FC = () => {
                     <div
                       key={p.id}
                       onClick={() => navigate('/attendance')}
-                      className="cursor-pointer hover:bg-[#EEE9DD]/50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-border"
+                      className="cursor-pointer hover:bg-[#EEE9DD]/50 p-1.5 rounded-lg transition-colors border-[0.5px] border-transparent hover:border-black/20"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-primary truncate max-w-[120px]">
@@ -604,7 +472,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Early Log-Offs Card */}
-            <div className="p-4 rounded-xl border border-border bg-[#FFFDF7] space-y-2.5">
+            <div className="p-4 rounded-xl border-[0.5px] border-black/20 bg-[#FFFDF7] space-y-2.5">
               <div className="flex items-center justify-between font-bold text-primary">
                 <span>Early Log-Offs</span>
                 <span className="text-[11px] text-[#C68B1A] font-semibold">
@@ -619,7 +487,7 @@ export const Dashboard: React.FC = () => {
                     <div
                       key={e.id}
                       onClick={() => navigate('/attendance')}
-                      className="cursor-pointer hover:bg-[#EEE9DD]/50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-border"
+                      className="cursor-pointer hover:bg-[#EEE9DD]/50 p-1.5 rounded-lg transition-colors border-[0.5px] border-transparent hover:border-black/20"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-primary truncate max-w-[120px]">
@@ -637,7 +505,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Extended Hours Card */}
-            <div className="p-4 rounded-xl border border-border bg-[#FFFDF7] space-y-2.5">
+            <div className="p-4 rounded-xl border-[0.5px] border-black/20 bg-[#FFFDF7] space-y-2.5">
               <div className="flex items-center justify-between font-bold text-primary">
                 <span>Extended Hours</span>
                 <span className="text-[11px] text-[#1E3A8A] font-semibold">
@@ -652,7 +520,7 @@ export const Dashboard: React.FC = () => {
                     <div
                       key={x.id}
                       onClick={() => navigate('/attendance')}
-                      className="cursor-pointer hover:bg-[#EEE9DD]/50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-border"
+                      className="cursor-pointer hover:bg-[#EEE9DD]/50 p-1.5 rounded-lg transition-colors border-[0.5px] border-transparent hover:border-black/20"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-primary truncate max-w-[120px]">
@@ -673,7 +541,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Weekend Work Card */}
-            <div className="p-4 rounded-xl border border-border bg-[#FFFDF7] space-y-2.5">
+            <div className="p-4 rounded-xl border-[0.5px] border-black/20 bg-[#FFFDF7] space-y-2.5">
               <div className="flex items-center justify-between font-bold text-primary">
                 <span>Weekend Sessions</span>
                 <span className="text-[11px] text-[#782046] font-semibold">
@@ -688,7 +556,7 @@ export const Dashboard: React.FC = () => {
                     <div
                       key={w.id}
                       onClick={() => navigate('/attendance')}
-                      className="cursor-pointer hover:bg-[#EEE9DD]/50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-border"
+                      className="cursor-pointer hover:bg-[#EEE9DD]/50 p-1.5 rounded-lg transition-colors border-[0.5px] border-transparent hover:border-black/20"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-primary truncate max-w-[120px]">
@@ -709,16 +577,16 @@ export const Dashboard: React.FC = () => {
         </Card>
       )}
 
-      {/* 5. MAIN SECTION: TEAM ACTIVITY TABLE + OPERATIONS AUDIT FEED */}
+      {/* 7. LIVE OPERATIONS CHRONOLOGY & TEAM WORKLOAD DIRECTORY */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Team Activity & Workload Table */}
         <div className="lg:col-span-2 space-y-4">
-          <Card className="p-6">
+          <Card className="p-6 border-[0.5px] border-black bg-surface">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h3 className="text-base font-bold text-primary">Team Activity & Workload</h3>
+                <h3 className="text-base font-bold text-primary">Team Operations Roster</h3>
                 <p className="text-xs text-secondary mt-0.5">
-                  Current assignments, stage progression, attendance and deadlines
+                  Current assignments, stage progression, presence register, and deadlines
                 </p>
               </div>
 
@@ -729,13 +597,13 @@ export const Dashboard: React.FC = () => {
                   placeholder="Search employee..."
                   value={searchEmployee}
                   onChange={(e) => setSearchEmployee(e.target.value)}
-                  className="px-3 py-1.5 text-xs bg-[#EEE9DD] border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary w-36 text-primary"
+                  className="px-3 py-1.5 text-xs bg-[#EEE9DD] border-[0.5px] border-black rounded-xl focus:outline-none focus:ring-1 focus:ring-primary w-36 text-primary font-medium"
                 />
 
                 <select
                   value={filterDepartment}
                   onChange={(e) => setFilterDepartment(e.target.value)}
-                  className="px-3 py-1.5 text-xs bg-[#EEE9DD] border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary text-primary"
+                  className="px-3 py-1.5 text-xs bg-[#EEE9DD] border-[0.5px] border-black rounded-xl focus:outline-none focus:ring-1 focus:ring-primary text-primary font-bold"
                 >
                   <option value="all">All Departments</option>
                   {departments.map((d) => (
@@ -751,16 +619,16 @@ export const Dashboard: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-border text-[11px] font-bold text-secondary uppercase tracking-wider bg-[#EEE9DD]/40">
+                  <tr className="border-b-[0.5px] border-black text-[11px] font-bold text-secondary uppercase tracking-wider bg-[#EEE9DD]/40">
                     <th className="py-3 px-3.5">Employee</th>
                     <th className="py-3 px-3.5">Today's Presence</th>
                     <th className="py-3 px-3.5">Current Deliverable</th>
-                    <th className="py-3 px-3.5">Workflow Stage</th>
+                    <th className="py-3 px-3.5">Stage</th>
                     <th className="py-3 px-3.5">Status</th>
                     <th className="py-3 px-3.5">Due Date</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border text-xs">
+                <tbody className="divide-y-[0.5px] divide-black/10 text-xs">
                   {filteredEmployees.map((emp) => {
                     const empTasks = tasks.filter(
                       (t) =>
@@ -778,11 +646,11 @@ export const Dashboard: React.FC = () => {
                       >
                         <td className="py-3.5 px-3.5">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-[#EFAED0]/30 text-[#782046] font-bold flex items-center justify-center text-xs shrink-0 border border-[#EFAED0]/60">
+                            <div className="w-8 h-8 rounded-full bg-[#EFAED0]/30 text-[#782046] font-bold flex items-center justify-center text-xs shrink-0 border-[0.5px] border-black/30">
                               {emp.initials || emp.name.slice(0, 2).toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-semibold text-primary truncate max-w-[140px]">{emp.name}</p>
+                              <p className="font-bold text-primary truncate max-w-[140px]">{emp.name}</p>
                               <p className="text-[10px] text-secondary truncate max-w-[140px]">{emp.designation}</p>
                             </div>
                           </div>
@@ -799,7 +667,7 @@ export const Dashboard: React.FC = () => {
                         <td className="py-3.5 px-3.5">
                           {currentTask ? (
                             <div className="min-w-0">
-                              <p className="font-medium text-primary truncate max-w-[180px]">
+                              <p className="font-semibold text-primary truncate max-w-[180px]">
                                 {currentTask.title}
                               </p>
                               <p className="text-[10px] text-secondary truncate max-w-[180px]">
@@ -847,34 +715,9 @@ export const Dashboard: React.FC = () => {
           </Card>
         </div>
 
-        {/* Right 1 Col: Chronological Operations Audit Log */}
+        {/* Right 1 Col: Visual Chronological Operations Audit Log */}
         <div className="space-y-4">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-primary">Live Operations Audit</h3>
-              <span className="text-[10px] font-bold text-accent uppercase tracking-wider bg-[#AFC7E9]/30 px-2.5 py-1 rounded-full border border-[#AFC7E9]/50">
-                Real-time
-              </span>
-            </div>
-
-            <div className="space-y-4 max-h-[560px] overflow-y-auto scrollbar-thin pr-1">
-              {activities.map((act) => (
-                <div key={act.id} className="flex items-start gap-3 text-xs">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-primary font-medium leading-snug">{act.description}</p>
-                    <p className="text-[10px] text-secondary mt-0.5">
-                      {getRelativeTime(act.created_at)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-
-              {activities.length === 0 && (
-                <p className="text-xs text-secondary text-center py-8">No recent activity events</p>
-              )}
-            </div>
-          </Card>
+          <ActivityTimelineView activities={activities} employees={employees} projects={projects} />
         </div>
       </div>
     </div>
