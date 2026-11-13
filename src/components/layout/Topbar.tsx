@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Zap, Clock, ShieldCheck, Menu } from 'lucide-react';
 import { Button } from '@/components/shared/Button';
+import { NotificationBellDropdown } from '@/components/notifications/NotificationBellDropdown';
 import { useDashboardTheme } from '@/context/DashboardThemeContext';
 import { clsx } from 'clsx';
 
@@ -52,6 +53,7 @@ export const Topbar: React.FC<TopbarProps> = ({
     '/leave': 'Leave Management',
     '/revisions': 'Revisions & Deliveries',
     '/calendar': 'Operations Calendar',
+    '/notifications': 'Notification Centre & Operational Alerts',
     '/reports': 'HR Statements & PDF Reports',
     '/report-history': 'Report Documents History',
     '/archive': 'Archived Projects',
@@ -126,6 +128,9 @@ export const Topbar: React.FC<TopbarProps> = ({
           <ShieldCheck className={clsx('w-3.5 h-3.5', isDark ? 'text-[#A9BB78]' : 'text-[#4D6D24]')} />
           <span>Private Lead Session</span>
         </div>
+
+        {/* Smart Notification Centre Bell */}
+        <NotificationBellDropdown />
 
         {/* Quick Request action */}
         <Button

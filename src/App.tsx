@@ -5,6 +5,7 @@ import { queryClient } from '@/lib/queryClient';
 import { Layout } from '@/components/layout/Layout';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { DashboardThemeProvider } from '@/context/DashboardThemeContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 
 // Pages
 import { Login } from '@/pages/Login';
@@ -15,6 +16,7 @@ import { Tasks } from '@/pages/Tasks';
 import { Workflow } from '@/pages/Workflow';
 import { Team } from '@/pages/Team';
 import { EmployeeDetails } from '@/pages/EmployeeDetails';
+import { NotificationsPage } from '@/pages/Notifications';
 import { Attendance } from '@/pages/Attendance';
 import { LeaveManagement } from '@/pages/LeaveManagement';
 import { Revisions } from '@/pages/Revisions';
@@ -38,7 +40,9 @@ export const App: React.FC = () => {
             <Route
               element={
                 <DashboardThemeProvider>
-                  <Layout />
+                  <NotificationProvider>
+                    <Layout />
+                  </NotificationProvider>
                 </DashboardThemeProvider>
               }
             >
@@ -50,6 +54,7 @@ export const App: React.FC = () => {
               <Route path="/workflow" element={<Navigate to="/dashboard" replace />} />
               <Route path="/team" element={<Team />} />
               <Route path="/team/:id" element={<EmployeeDetails />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/attendance" element={<Attendance />} />
               <Route path="/leave" element={<LeaveManagement />} />
               <Route path="/revisions" element={<Revisions />} />

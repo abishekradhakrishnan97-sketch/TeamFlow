@@ -629,3 +629,7 @@ export const HALF_DAY_LABELS: Record<HalfDayPeriod, string> = {
   second_half: 'Second Half (Afternoon)',
   custom: 'Custom Window',
 };
+
+// Re-export notification types
+export * from './notifications';
+

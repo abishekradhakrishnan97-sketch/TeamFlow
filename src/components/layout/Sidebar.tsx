@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from '@/services/supabase/auth';
 import { useDashboardTheme } from '@/context/DashboardThemeContext';
+import { useNotifications } from '@/context/NotificationContext';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -18,6 +19,7 @@ import {
   Settings,
   LogOut,
   Zap,
+  Bell,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -33,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
 }) => {
   const { isDark } = useDashboardTheme();
+  const { unreadCount } = useNotifications();
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
 
@@ -52,6 +55,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'Operations',
       items: [
         { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
+        {
+          label: 'Notifications',
+          path: '/notifications',
+          icon: <Bell className="w-5 h-5 shrink-0" />,
+          badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined,
+        },
         { label: 'Projects', path: '/projects', icon: <FolderKanban className="w-5 h-5 shrink-0" /> },
         { label: 'Tasks', path: '/tasks', icon: <CheckSquare className="w-5 h-5 shrink-0" /> },
         { label: 'Team', path: '/team', icon: <Users className="w-5 h-5 shrink-0" /> },
@@ -215,6 +224,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   >
                     {item.label}
                   </span>
+
+                  {(item as any).badge !== undefined && (
+                    <span
+                      className={clsx(
+                        'ml-auto text-[10px] font-bold px-1.5 py-0.2 rounded-full border-[0.5px] shrink-0 transition-opacity',
+                        isExpanded ? 'opacity-100' : 'opacity-0',
+                        'bg-[#E99A88] text-black border-black'
+                      )}
+                    >
+                      {(item as any).badge}
+                    </span>
+                  )}
 
                   {/* Tooltip on collapsed state */}
                   {!isExpanded && (

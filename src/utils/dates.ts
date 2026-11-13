@@ -44,6 +44,29 @@ export function formatTime(time: string | null | undefined): string {
   }
 }
 
+export function formatRelativeTime(dateInput: string | Date | null | undefined): string {
+  if (!dateInput) return '—';
+  try {
+    const d = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    if (isNaN(d.getTime())) return '—';
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    if (diffMs < 0) return 'just now';
+    const diffSec = Math.floor(diffMs / 1000);
+    if (diffSec < 45) return 'just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return format(d, 'dd MMM');
+  } catch {
+    return '—';
+  }
+}
+
 export function formatHours(hours: number | null | undefined): string {
   if (!hours && hours !== 0) return '—';
   const h = Math.floor(hours);
