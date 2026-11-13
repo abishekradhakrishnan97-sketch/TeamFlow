@@ -45,6 +45,8 @@ export interface Employee {
   email?: string;
   phone?: string;
   notes?: string;
+  user_id?: UUID;
+  is_lead?: boolean;
   created_at: string;
   updated_at: string;
 }

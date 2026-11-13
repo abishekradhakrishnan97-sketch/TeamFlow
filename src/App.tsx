@@ -16,6 +16,7 @@ import { Tasks } from '@/pages/Tasks';
 import { Workflow } from '@/pages/Workflow';
 import { Team } from '@/pages/Team';
 import { EmployeeDetails } from '@/pages/EmployeeDetails';
+import { MyWork } from '@/pages/MyWork';
 import { NotificationsPage } from '@/pages/Notifications';
 import { Attendance } from '@/pages/Attendance';
 import { LeaveManagement } from '@/pages/LeaveManagement';
@@ -48,6 +49,7 @@ export const App: React.FC = () => {
             >
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/my-work" element={<MyWork />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:id" element={<ProjectDetails />} />
               <Route path="/tasks" element={<Tasks />} />

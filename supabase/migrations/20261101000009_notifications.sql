@@ -34,3 +34,4 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "notifications_admin_all" ON public.notifications;
 CREATE POLICY "notifications_admin_all" ON public.notifications
   FOR ALL USING (public.is_admin());
+

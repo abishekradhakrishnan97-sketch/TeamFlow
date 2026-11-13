@@ -20,6 +20,7 @@ import {
   LogOut,
   Zap,
   Bell,
+  Briefcase,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -55,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'Operations',
       items: [
         { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
+        { label: 'My Work', path: '/my-work', icon: <Briefcase className="w-5 h-5 shrink-0" /> },
         {
           label: 'Notifications',
           path: '/notifications',

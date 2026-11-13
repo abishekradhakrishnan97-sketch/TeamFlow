@@ -676,3 +676,4 @@ export async function createNotification(
 
   window.dispatchEvent(new CustomEvent('teamflow:notifications-updated'));
 }
+

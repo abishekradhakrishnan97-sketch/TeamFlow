@@ -51,3 +51,4 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   excelImports: true,
   reportsAndBackups: true,
 };
+

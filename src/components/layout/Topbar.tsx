@@ -46,6 +46,7 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   const pageTitles: Record<string, string> = {
     '/dashboard': 'Dashboard & Control Centre',
+    '/my-work': 'My Work — Personal Execution Portfolio',
     '/projects': 'Projects Management',
     '/tasks': 'Tasks & Kanban Workstreams',
     '/team': 'Team Directory',

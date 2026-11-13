@@ -190,6 +190,12 @@ export function generateEmployeeWorkPDF(params: {
   projects: Project[];
   tasks: Task[];
   revisions: Revision[];
+  attendanceRecords?: AttendanceRecord[];
+  leaves?: LeaveRecord[];
+  permissions?: AttendancePermission[];
+  earlyLogoffs?: EarlyLogoff[];
+  extendedHours?: ExtendedAvailability[];
+  extraWork?: ExtraWorkRecord[];
   startDate: string;
   endDate: string;
   settings?: AppSettings;
@@ -198,8 +204,8 @@ export function generateEmployeeWorkPDF(params: {
 
   addHeader(
     doc,
-    'EMPLOYEE WORK STATEMENT',
-    `Employee: ${params.employee.name} (${params.employee.designation}) • Period: ${formatDate(params.startDate)} to ${formatDate(params.endDate)}`,
+    'INDIVIDUAL EMPLOYEE WORK STATEMENT',
+    `Employee: ${params.employee.name} (${params.employee.designation}) • Department: ${params.employee.department?.name || 'Design'} • Period: ${formatDate(params.startDate)} to ${formatDate(params.endDate)}`,
     params.settings
   );
 
@@ -222,6 +228,11 @@ export function generateEmployeeWorkPDF(params: {
   );
   const blockedTasks = params.tasks.filter((t) => t.status === 'blocked');
 
+  // Attendance summary metrics
+  const attSummary = params.attendanceRecords ? summariseAttendance(params.attendanceRecords) : null;
+  const approvedLeaves = (params.leaves || []).filter((l) => l.approval_status === 'approved');
+  const totalLeaveDays = approvedLeaves.reduce((sum, l) => sum + (l.num_days || 0), 0);
+
   const startY = 56;
   const metrics = [
     { label: 'Projects Handled', value: String(handledProjects.length) },
@@ -229,7 +240,10 @@ export function generateEmployeeWorkPDF(params: {
     { label: 'In Progress', value: String(inProgressTasks.length) },
     { label: 'Pending / Hold', value: String(pendingTasks.length) },
     { label: 'Blocked Tasks', value: String(blockedTasks.length) },
-    { label: 'Revisions Handled', value: String(params.revisions.length) },
+    {
+      label: attSummary ? 'Days Present' : 'Revisions Handled',
+      value: attSummary ? String(attSummary.present) : String(params.revisions.length),
+    },
   ];
 
   const cardWidth = 32;
@@ -255,7 +269,7 @@ export function generateEmployeeWorkPDF(params: {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(...PRIMARY_COLOR);
-  doc.text('Projects Handled', 14, startY + 26);
+  doc.text('Projects Handled & Deliverables', 14, startY + 26);
 
   const projectRows = handledProjects.map((p) => [
     p.name,
@@ -280,7 +294,7 @@ export function generateEmployeeWorkPDF(params: {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(...PRIMARY_COLOR);
-  doc.text('Task Deliverables & Status', 14, nextY);
+  doc.text('Task Deliverables & Execution Records', 14, nextY);
 
   const taskRows = params.tasks.map((t) => [
     t.title,
@@ -289,17 +303,76 @@ export function generateEmployeeWorkPDF(params: {
     t.priority.toUpperCase(),
     formatDate(t.due_date),
     formatDate(t.completion_date),
+    t.description ? t.description.slice(0, 45) + (t.description.length > 45 ? '...' : '') : '—',
   ]);
 
   autoTable(doc, {
     startY: nextY + 4,
-    head: [['Task Title', 'Project', 'Status', 'Priority', 'Due Date', 'Completed']],
-    body: taskRows.length > 0 ? taskRows : [['No tasks assigned in period', '—', '—', '—', '—', '—']],
+    head: [['Task Title', 'Project', 'Status', 'Priority', 'Due Date', 'Completed', 'Notes / Deliverables']],
+    body: taskRows.length > 0 ? taskRows : [['No tasks assigned in period', '—', '—', '—', '—', '—', '—']],
     theme: 'grid',
     headStyles: { fillColor: PRIMARY_COLOR, fontSize: 8 },
     styles: { fontSize: 7.5, cellPadding: 2 },
-    margin: { left: 14, right: 14, bottom: 24 },
+    margin: { left: 14, right: 14 },
   });
+
+  // Attendance & Operational HR Summary Table (if attendance records or extensions present)
+  if (params.attendanceRecords || params.leaves || params.permissions || params.extraWork) {
+    const attY = (doc as any).lastAutoTable.finalY + 8;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...PRIMARY_COLOR);
+    doc.text('Attendance & Operational HR Summary', 14, attY);
+
+    const halfDayCount = (params.permissions || []).length;
+    const earlyLogoffCount = (params.earlyLogoffs || []).length;
+    const extendedHoursMinutes = (params.extendedHours || []).reduce(
+      (sum, e) => sum + (e.active_work_minutes || 0) + (e.standby_minutes || 0),
+      0
+    );
+    const satExtraMinutes = (params.extraWork || [])
+      .filter((w) => w.work_day_type === 'saturday')
+      .reduce((sum, w) => sum + (w.total_minutes || 0), 0);
+    const sunExtraMinutes = (params.extraWork || [])
+      .filter((w) => w.work_day_type === 'sunday')
+      .reduce((sum, w) => sum + (w.total_minutes || 0), 0);
+
+    const hrSummaryRows = [
+      [
+        attSummary ? String(attSummary.present) : '—',
+        attSummary ? String(attSummary.absent) : '—',
+        totalLeaveDays > 0 ? `${totalLeaveDays} day(s)` : '0',
+        halfDayCount > 0 ? `${halfDayCount} session(s)` : '0',
+        earlyLogoffCount > 0 ? `${earlyLogoffCount} session(s)` : '0',
+        extendedHoursMinutes > 0 ? formatMinutes(extendedHoursMinutes) : '0m',
+        satExtraMinutes > 0 ? formatMinutes(satExtraMinutes) : '0m',
+        sunExtraMinutes > 0 ? formatMinutes(sunExtraMinutes) : '0m',
+        attSummary ? formatHours(attSummary.totalHours) : '—',
+      ],
+    ];
+
+    autoTable(doc, {
+      startY: attY + 4,
+      head: [
+        [
+          'Days Present',
+          'Days Absent',
+          'Approved Leaves',
+          'Half-Day Perms',
+          'Early Log-offs',
+          'Late Availability',
+          'Sat Extra Work',
+          'Sun Extra Work',
+          'Total Recorded Hours',
+        ],
+      ],
+      body: hrSummaryRows,
+      theme: 'grid',
+      headStyles: { fillColor: PRIMARY_COLOR, fontSize: 7 },
+      styles: { fontSize: 7.5, cellPadding: 2, halign: 'center' },
+      margin: { left: 14, right: 14, bottom: 24 },
+    });
+  }
 
   addFooter(doc, params.settings);
   return doc.output('blob');

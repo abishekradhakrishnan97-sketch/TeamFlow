@@ -131,9 +131,24 @@ export const Reports: React.FC = () => {
         generatedName = `TeamFlow_Attendance_${emp.name.replace(/\s+/g, '_')}_${periodLabel}.pdf`;
       } else if (reportType === 'employee_work') {
         if (!emp) throw new Error('Please select an employee');
-        const [empTasks, allRevs] = await Promise.all([
+        const [
+          empTasks,
+          allRevs,
+          empAtt,
+          empLeaves,
+          empPerms,
+          empEarly,
+          empExt,
+          empExtra,
+        ] = await Promise.all([
           getTasks({ employeeId: emp.id }),
           getRevisions(),
+          getAttendanceByEmployee(emp.id).catch(() => []),
+          getLeaveRecords({ employeeId: emp.id }).catch(() => []),
+          getAttendancePermissions({ employeeId: emp.id, startDate, endDate }).catch(() => []),
+          getEarlyLogoffs({ employeeId: emp.id, startDate, endDate }).catch(() => []),
+          getExtendedAvailability({ employeeId: emp.id, startDate, endDate }).catch(() => []),
+          getExtraWorkRecords({ employeeId: emp.id, startDate, endDate }).catch(() => []),
         ]);
         const empProjects = getEmployeeProjects(emp.id, projects, empTasks);
         blob = generateEmployeeWorkPDF({
@@ -141,6 +156,12 @@ export const Reports: React.FC = () => {
           projects: empProjects,
           tasks: empTasks,
           revisions: allRevs,
+          attendanceRecords: empAtt,
+          leaves: empLeaves,
+          permissions: empPerms,
+          earlyLogoffs: empEarly,
+          extendedHours: empExt,
+          extraWork: empExtra,
           startDate,
           endDate,
           settings: appSettings,
