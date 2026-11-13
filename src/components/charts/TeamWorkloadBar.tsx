@@ -16,7 +16,9 @@ export const TeamWorkloadBar: React.FC<TeamWorkloadBarProps> = ({ employees, tas
 
   const employeeWorkload = employees.map((emp) => {
     const assignedTasks = tasks.filter((t) =>
-      t.assignees?.some((a) => a.employee?.id === emp.id)
+      t.assignees?.some(
+        (a: any) => a.employee?.id === emp.id || a.employee_id === emp.id
+      )
     );
     const activeTasks = assignedTasks.filter((t) => t.status !== 'completed');
     const completedTasks = assignedTasks.filter((t) => t.status === 'completed');
@@ -214,3 +216,4 @@ export const TeamWorkloadBar: React.FC<TeamWorkloadBarProps> = ({ employees, tas
     </Card>
   );
 };
+

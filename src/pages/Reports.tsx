@@ -17,6 +17,7 @@ import { getLeaveRecords } from '@/services/supabase/leave';
 import { getRevisions } from '@/services/supabase/revisions';
 import { saveReportDocument } from '@/services/supabase/reports';
 import { getAppSettings } from '@/services/supabase/settings';
+import { getEmployeeProjects } from '@/utils/employeeProjects';
 import {
   Employee,
   Project,
@@ -134,9 +135,7 @@ export const Reports: React.FC = () => {
           getTasks({ employeeId: emp.id }),
           getRevisions(),
         ]);
-        const empProjects = projects.filter((p) =>
-          p.members?.some((m) => m.employee_id === emp.id)
-        );
+        const empProjects = getEmployeeProjects(emp.id, projects, empTasks);
         blob = generateEmployeeWorkPDF({
           employee: emp,
           projects: empProjects,
@@ -275,9 +274,7 @@ export const Reports: React.FC = () => {
           getExtendedAvailability({ employeeId: emp.id, startDate, endDate }),
           getExtraWorkRecords({ employeeId: emp.id, startDate, endDate }),
         ]);
-        const empProjects = projects.filter((p) =>
-          p.members?.some((m) => m.employee_id === emp.id)
-        );
+        const empProjects = getEmployeeProjects(emp.id, projects, tasks);
         blob = generateCombinedHRPDF({
           employee: emp,
           attendanceRecords: att,

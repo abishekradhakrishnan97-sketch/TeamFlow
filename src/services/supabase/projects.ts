@@ -20,7 +20,7 @@ export async function getProjects(options?: {
       *,
       owner:employees(*),
       members:project_members(
-        id, role,
+        id, role, employee_id,
         employee:employees(*)
       )
     `)

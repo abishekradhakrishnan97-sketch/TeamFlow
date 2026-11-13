@@ -183,3 +183,4 @@ export const TaskAnalyticsCard: React.FC<TaskAnalyticsCardProps> = ({ tasks, cla
     </Card>
   );
 };
+

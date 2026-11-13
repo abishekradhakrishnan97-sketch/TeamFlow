@@ -183,3 +183,4 @@ export const ActivityTrendChart: React.FC<ActivityTrendChartProps> = ({
     </Card>
   );
 };
+

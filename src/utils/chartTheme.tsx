@@ -247,3 +247,4 @@ export const ChartTooltip: React.FC<{
     </div>
   );
 };
+

@@ -28,14 +28,58 @@ export async function getEmployees(includeInactive = false): Promise<Employee[]>
 }
 
 export async function getEmployeeById(id: UUID): Promise<Employee | null> {
-  const { data, error } = await supabase
-    .from('employees')
-    .select('*, department:departments(*)')
-    .eq('id', id)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*, department:departments(*)')
+      .eq('id', id)
+      .maybeSingle();
 
-  if (error) throw error;
-  return data;
+    if (!error && data) {
+      return data as Employee;
+    }
+    if (error) {
+      console.warn('getEmployeeById join query failed, falling back:', error.message);
+    }
+  } catch (err) {
+    console.warn('getEmployeeById join query threw exception:', err);
+  }
+
+  // Fallback query without complex join
+  try {
+    const { data: base, error: baseErr } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (baseErr || !base) {
+      console.error('getEmployeeById fallback error or not found:', baseErr);
+      return null;
+    }
+
+    let department = null;
+    if (base.department_id) {
+      try {
+        const { data: deptData } = await supabase
+          .from('departments')
+          .select('*')
+          .eq('id', base.department_id)
+          .maybeSingle();
+        department = deptData || null;
+      } catch {
+        // Safe to ignore
+      }
+    }
+
+    return {
+      ...base,
+      department,
+    } as Employee;
+  } catch (fallbackErr) {
+    console.error('getEmployeeById complete failure:', fallbackErr);
+    return null;
+  }
 }
 
 export async function createEmployee(employee: Partial<Employee>): Promise<Employee> {

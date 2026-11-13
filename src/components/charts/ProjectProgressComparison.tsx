@@ -173,3 +173,4 @@ export const ProjectProgressComparison: React.FC<ProjectProgressComparisonProps>
     </Card>
   );
 };
+

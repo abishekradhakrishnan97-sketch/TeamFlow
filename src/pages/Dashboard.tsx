@@ -100,7 +100,7 @@ export const Dashboard: React.FC = () => {
       const today = todayIST();
       const { startDate, endDate } = getMonthRange(selectedMonth);
 
-      const [p, e, d, t, att, act, summary, perms, early, ext, extra] = await Promise.all([
+      const settled = await Promise.allSettled([
         getProjects({ includeArchived: false }),
         getEmployees(true),
         getDepartments(),
@@ -114,17 +114,19 @@ export const Dashboard: React.FC = () => {
         getExtraWorkRecords({ startDate, endDate }),
       ]);
 
-      setProjects(p);
-      setEmployees(e);
-      setDepartments(d);
-      setTasks(t);
-      setTodayAttendance(att);
-      setActivities(act);
-      setExtSummary(summary);
-      setRecentPermissions(perms.slice(0, 3));
-      setRecentEarly(early.slice(0, 3));
-      setRecentExtended(ext.slice(0, 3));
-      setRecentExtraWork(extra.slice(0, 3));
+      const [pRes, eRes, dRes, tRes, attRes, actRes, sumRes, permsRes, earlyRes, extRes, extraRes] = settled;
+
+      if (pRes.status === 'fulfilled') setProjects(pRes.value || []);
+      if (eRes.status === 'fulfilled') setEmployees(eRes.value || []);
+      if (dRes.status === 'fulfilled') setDepartments(dRes.value || []);
+      if (tRes.status === 'fulfilled') setTasks(tRes.value || []);
+      if (attRes.status === 'fulfilled') setTodayAttendance(attRes.value || []);
+      if (actRes.status === 'fulfilled') setActivities(actRes.value || []);
+      if (sumRes.status === 'fulfilled') setExtSummary(sumRes.value);
+      if (permsRes.status === 'fulfilled') setRecentPermissions((permsRes.value || []).slice(0, 3));
+      if (earlyRes.status === 'fulfilled') setRecentEarly((earlyRes.value || []).slice(0, 3));
+      if (extRes.status === 'fulfilled') setRecentExtended((extRes.value || []).slice(0, 3));
+      if (extraRes.status === 'fulfilled') setRecentExtraWork((extraRes.value || []).slice(0, 3));
     } catch (err) {
       console.error('Error loading dashboard data:', err);
     } finally {
@@ -632,7 +634,9 @@ export const Dashboard: React.FC = () => {
                   {filteredEmployees.map((emp) => {
                     const empTasks = tasks.filter(
                       (t) =>
-                        t.assignees?.some((a) => a.employee?.id === emp.id) &&
+                        t.assignees?.some(
+                          (a: any) => a.employee?.id === emp.id || a.employee_id === emp.id
+                        ) &&
                         t.status !== 'completed'
                     );
                     const currentTask = empTasks[0];

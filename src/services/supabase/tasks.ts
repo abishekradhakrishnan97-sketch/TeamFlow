@@ -8,63 +8,162 @@ export async function getTasks(options?: {
   status?: TaskStatus;
   search?: string;
 }): Promise<Task[]> {
-  let query = supabase
-    .from('tasks')
-    .select(`
-      *,
-      project:projects(*),
-      workstream:workstreams(*),
-      workflow_stage:workflow_stages(*),
-      assignees:task_assignees(
-        id,
-        employee:employees(*)
-      )
-    `)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
+  try {
+    let query = supabase
+      .from('tasks')
+      .select(`
+        *,
+        project:projects(*),
+        workstream:workstreams(*),
+        workflow_stage:workflow_stages(*),
+        assignees:task_assignees(
+          id,
+          employee_id,
+          employee:employees(*)
+        )
+      `)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
 
-  if (options?.projectId) {
-    query = query.eq('project_id', options.projectId);
+    if (options?.projectId) {
+      query = query.eq('project_id', options.projectId);
+    }
+    if (options?.status) {
+      query = query.eq('status', options.status);
+    }
+    if (options?.search) {
+      query = query.ilike('title', `%${options.search}%`);
+    }
+
+    const { data, error } = await query;
+    if (!error && data) {
+      let tasks = data as Task[];
+      if (options?.employeeId) {
+        tasks = tasks.filter((t) =>
+          t.assignees?.some(
+            (a: any) =>
+              a.employee?.id === options.employeeId ||
+              a.employee_id === options.employeeId
+          )
+        );
+      }
+      return tasks;
+    }
+    if (error) {
+      console.warn('getTasks rich query failed, using fallback:', error.message);
+    }
+  } catch (err) {
+    console.warn('getTasks rich query threw exception:', err);
   }
-  if (options?.status) {
-    query = query.eq('status', options.status);
+
+  // Fallback query without complex joins
+  try {
+    let fallbackQuery = supabase
+      .from('tasks')
+      .select('*, project:projects(*)')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (options?.projectId) fallbackQuery = fallbackQuery.eq('project_id', options.projectId);
+    if (options?.status) fallbackQuery = fallbackQuery.eq('status', options.status);
+
+    const { data: baseTasks } = await fallbackQuery;
+    if (!baseTasks) return [];
+
+    const taskIds = baseTasks.map((t) => t.id);
+    let assigneeMap = new Map<string, any[]>();
+    if (taskIds.length > 0) {
+      try {
+        const { data: assignees } = await supabase
+          .from('task_assignees')
+          .select('id, task_id, employee_id, employee:employees(*)')
+          .in('task_id', taskIds);
+
+        (assignees || []).forEach((a: any) => {
+          const list = assigneeMap.get(a.task_id) || [];
+          list.push(a);
+          assigneeMap.set(a.task_id, list);
+        });
+      } catch {
+        // Safe to ignore
+      }
+    }
+
+    let result = baseTasks.map((t) => ({
+      ...t,
+      assignees: assigneeMap.get(t.id) || [],
+    })) as Task[];
+
+    if (options?.employeeId) {
+      result = result.filter((t) =>
+        t.assignees?.some(
+          (a: any) =>
+            a.employee?.id === options.employeeId ||
+            a.employee_id === options.employeeId
+        )
+      );
+    }
+
+    return result;
+  } catch (fbErr) {
+    console.error('getTasks fallback completely failed:', fbErr);
+    return [];
   }
-  if (options?.search) {
-    query = query.ilike('title', `%${options.search}%`);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  let tasks = (data || []) as Task[];
-
-  if (options?.employeeId) {
-    tasks = tasks.filter((t) =>
-      t.assignees?.some((a) => a.employee?.id === options.employeeId)
-    );
-  }
-
-  return tasks;
 }
 
 export async function getTaskById(id: UUID): Promise<Task | null> {
-  const { data, error } = await supabase
-    .from('tasks')
-    .select(`
-      *,
-      project:projects(*),
-      workstream:workstreams(*),
-      workflow_stage:workflow_stages(*),
-      assignees:task_assignees(
-        id,
-        employee:employees(*)
-      )
-    `)
-    .eq('id', id)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select(`
+        *,
+        project:projects(*),
+        workstream:workstreams(*),
+        workflow_stage:workflow_stages(*),
+        assignees:task_assignees(
+          id,
+          employee_id,
+          employee:employees(*)
+        )
+      `)
+      .eq('id', id)
+      .maybeSingle();
 
-  if (error) throw error;
-  return data;
+    if (!error && data) return data as Task;
+    if (error) console.warn('getTaskById rich query failed:', error.message);
+  } catch (err) {
+    console.warn('getTaskById rich query threw:', err);
+  }
+
+  // Fallback query
+  try {
+    const { data: baseTask, error: baseErr } = await supabase
+      .from('tasks')
+      .select('*, project:projects(*)')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (baseErr || !baseTask) return null;
+
+    let assignees: any[] = [];
+    try {
+      const { data: assigneeRows } = await supabase
+        .from('task_assignees')
+        .select('id, task_id, employee_id, employee:employees(*)')
+        .eq('task_id', id);
+      assignees = assigneeRows || [];
+    } catch {
+      // Safe to ignore
+    }
+
+    return {
+      ...baseTask,
+      assignees,
+    } as Task;
+  } catch (fbErr) {
+    console.error('getTaskById fallback failed:', fbErr);
+    return null;
+  }
 }
 
 export async function createTask(

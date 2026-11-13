@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, MetricCard } from '@/components/shared/Card';
 import { Button } from '@/components/shared/Button';
 import { StatusBadge, AttendanceBadge, ApprovalBadge } from '@/components/shared/Badge';
+import { supabase } from '@/services/supabase/client';
+import { getEmployeeProjects } from '@/utils/employeeProjects';
 import { getEmployeeById } from '@/services/supabase/employees';
 import { getTasks } from '@/services/supabase/tasks';
 import { getProjects } from '@/services/supabase/projects';
@@ -94,38 +96,90 @@ export const EmployeeDetails: React.FC = () => {
   const loadData = async (empId: string) => {
     try {
       setLoading(true);
-      const [emp, allTasks, allProjects, att, lv, perms, early, ext, extra, summary] =
-        await Promise.all([
-          getEmployeeById(empId),
-          getTasks({ employeeId: empId }),
-          getProjects({ includeArchived: true }),
-          getAttendanceByEmployee(empId),
-          getLeaveRecords({ employeeId: empId }),
-          getAttendancePermissions({ employeeId: empId }),
-          getEarlyLogoffs({ employeeId: empId }),
-          getExtendedAvailability({ employeeId: empId }),
-          getExtraWorkRecords({ employeeId: empId }),
-          getAttendanceExtensionsSummary({ employeeId: empId }),
-        ]);
 
-      setEmployee(emp);
-      setTasks(allTasks);
+      // 1. Fetch employee first with resilient fallbacks
+      let emp: Employee | null = null;
+      try {
+        emp = await getEmployeeById(empId);
+      } catch (err) {
+        console.warn('getEmployeeById caught error:', err);
+      }
 
-      // Projects where this employee is a member
-      const memberProjects = allProjects.filter((p) =>
-        p.members?.some((m) => m.employee_id === empId)
-      );
+      if (!emp) {
+        try {
+          const { data: directData } = await supabase
+            .from('employees')
+            .select('*, department:departments(*)')
+            .eq('id', empId)
+            .maybeSingle();
+          if (directData) emp = directData as Employee;
+        } catch {
+          // Safe to ignore
+        }
+      }
+
+      if (!emp) {
+        try {
+          const { data: plainData } = await supabase
+            .from('employees')
+            .select('*')
+            .eq('id', empId)
+            .maybeSingle();
+          if (plainData) emp = plainData as Employee;
+        } catch {
+          // Safe to ignore
+        }
+      }
+
+      if (emp) {
+        setEmployee(emp);
+      }
+
+      // 2. Fetch all related collections using Promise.allSettled
+      // so NO secondary failure blocks displaying the employee profile!
+      const results = await Promise.allSettled([
+        getTasks({ employeeId: empId }),
+        getProjects({ includeArchived: true }),
+        getAttendanceByEmployee(empId),
+        getLeaveRecords({ employeeId: empId }),
+        getAttendancePermissions({ employeeId: empId }),
+        getEarlyLogoffs({ employeeId: empId }),
+        getExtendedAvailability({ employeeId: empId }),
+        getExtraWorkRecords({ employeeId: empId }),
+        getAttendanceExtensionsSummary({ employeeId: empId }),
+      ]);
+
+      const [
+        tasksRes,
+        projectsRes,
+        attRes,
+        leavesRes,
+        permsRes,
+        earlyRes,
+        extRes,
+        extraRes,
+        summaryRes,
+      ] = results;
+
+      const loadedTasks = tasksRes.status === 'fulfilled' ? tasksRes.value || [] : [];
+      const loadedProjects = projectsRes.status === 'fulfilled' ? projectsRes.value || [] : [];
+
+      setTasks(loadedTasks);
+
+      // Robust "Projects Handled" calculation:
+      // Includes projects where employee is owner, member, OR has assigned tasks
+      const memberProjects = getEmployeeProjects(empId, loadedProjects, loadedTasks);
       setProjects(memberProjects);
 
-      setAttendance(att);
-      setLeaves(lv);
-      setPermissions(perms);
-      setEarlyLogoffs(early);
-      setExtendedHours(ext);
-      setExtraWork(extra);
-      setExtSummary(summary);
+      if (attRes.status === 'fulfilled') setAttendance(attRes.value || []);
+      if (leavesRes.status === 'fulfilled') setLeaves(leavesRes.value || []);
+      if (permsRes.status === 'fulfilled') setPermissions(permsRes.value || []);
+      if (earlyRes.status === 'fulfilled') setEarlyLogoffs(earlyRes.value || []);
+      if (extRes.status === 'fulfilled') setExtendedHours(extRes.value || []);
+      if (extraRes.status === 'fulfilled') setExtraWork(extraRes.value || []);
+      if (summaryRes.status === 'fulfilled') setExtSummary(summaryRes.value);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load employee details:', err);
       toast.error('Failed to load employee details');
     } finally {
       setLoading(false);
@@ -134,11 +188,31 @@ export const EmployeeDetails: React.FC = () => {
 
   if (!employee && !loading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-sm text-secondary">Employee not found.</p>
-        <Button variant="secondary" size="sm" onClick={() => navigate('/team')} className="mt-4">
-          ← Back to Team
-        </Button>
+      <div className="text-center py-16 px-4">
+        <div className="max-w-md mx-auto p-6 bg-surface rounded-2xl border-[0.5px] border-black shadow-soft">
+          <p className="text-base font-bold text-primary">Employee Record Not Found</p>
+          <p className="text-xs text-secondary mt-1">
+            This employee could not be located or may have been archived.
+          </p>
+          <div className="flex items-center justify-center gap-3 mt-5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => id && loadData(id)}
+              className="border-[0.5px] border-black text-xs font-bold"
+            >
+              Retry
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/team')}
+              className="border-[0.5px] border-black text-xs font-bold"
+            >
+              ← Back to Team
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

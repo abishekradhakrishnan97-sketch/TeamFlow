@@ -203,6 +203,18 @@ export function generateEmployeeWorkPDF(params: {
     params.settings
   );
 
+  // Guarantee projects handled reflects tasks and memberships
+  const handledProjects = [...params.projects];
+  if (handledProjects.length === 0 && params.tasks.length > 0) {
+    const seen = new Set<string>();
+    params.tasks.forEach((t) => {
+      if (t.project && !seen.has(t.project.id)) {
+        seen.add(t.project.id);
+        handledProjects.push(t.project);
+      }
+    });
+  }
+
   const completedTasks = params.tasks.filter((t) => t.status === 'completed');
   const inProgressTasks = params.tasks.filter((t) => t.status === 'working');
   const pendingTasks = params.tasks.filter(
@@ -212,7 +224,7 @@ export function generateEmployeeWorkPDF(params: {
 
   const startY = 56;
   const metrics = [
-    { label: 'Projects Handled', value: String(params.projects.length) },
+    { label: 'Projects Handled', value: String(handledProjects.length) },
     { label: 'Completed Tasks', value: String(completedTasks.length) },
     { label: 'In Progress', value: String(inProgressTasks.length) },
     { label: 'Pending / Hold', value: String(pendingTasks.length) },
@@ -245,7 +257,7 @@ export function generateEmployeeWorkPDF(params: {
   doc.setTextColor(...PRIMARY_COLOR);
   doc.text('Projects Handled', 14, startY + 26);
 
-  const projectRows = params.projects.map((p) => [
+  const projectRows = handledProjects.map((p) => [
     p.name,
     p.client_name || '—',
     p.project_type.replace(/_/g, ' '),
