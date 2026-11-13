@@ -7,18 +7,36 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#F7F8FA',
-        sidebar: '#FFFFFF',
-        primary: '#17191F',
-        secondary: '#737985',
+        background: '#F7F3E9',
+        surface: '#FFFDF7',
+        'surface-muted': '#EEE9DD',
+        sidebar: '#171717',
+        primary: '#222222',
+        secondary: '#77746D',
+        border: '#E7E1D5',
+        // Pastel Semantic Tokens
+        pastel: {
+          pink: '#EFAED0',
+          yellow: '#F2D76B',
+          green: '#A9BB78',
+          blue: '#AFC7E9',
+        },
+        // Functional semantics aligned with palette
         accent: '#6258E8',
-        success: '#249B70',
-        warning: '#D99B35',
-        danger: '#D9534F',
-        border: '#E8EAF0',
+        success: '#5F8745',
+        warning: '#C68B1A',
+        danger: '#C84C4C',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+      },
+      borderRadius: {
+        '2xl': '1rem',
+        '3xl': '1.5rem',
+      },
+      boxShadow: {
+        'soft': '0 2px 10px rgba(34, 34, 34, 0.04)',
+        'soft-md': '0 4px 20px rgba(34, 34, 34, 0.06)',
       },
     },
   },

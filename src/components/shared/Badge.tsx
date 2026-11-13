@@ -5,15 +5,11 @@ import {
   TaskStatus,
   Priority,
   AttendanceStatus,
-  PROJECT_STATUS_LABELS,
-  TASK_STATUS_LABELS,
-  PRIORITY_LABELS,
-  ATTENDANCE_STATUS_LABELS,
 } from '@/types';
 
-interface BadgeProps {
+export interface BadgeProps {
   children?: React.ReactNode;
-  variant?: 'gray' | 'blue' | 'green' | 'yellow' | 'red' | 'purple';
+  variant?: 'gray' | 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'pink';
   size?: 'sm' | 'md';
   className?: string;
   dot?: boolean;
@@ -27,21 +23,23 @@ export const Badge: React.FC<BadgeProps> = ({
   dot = false,
 }) => {
   const styles = {
-    gray: 'bg-gray-100 text-gray-700 border-gray-200',
-    blue: 'bg-blue-50 text-blue-700 border-blue-200',
-    green: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    yellow: 'bg-amber-50 text-amber-700 border-amber-200',
-    red: 'bg-rose-50 text-rose-700 border-rose-200',
-    purple: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    gray: 'bg-[#EEE9DD] text-[#55524B] border-[#E0D8C8]',
+    blue: 'bg-[#AFC7E9]/30 text-[#1E3A8A] border-[#AFC7E9]/60',
+    green: 'bg-[#A9BB78]/25 text-[#2D4018] border-[#A9BB78]/50',
+    yellow: 'bg-[#F2D76B]/30 text-[#6B5007] border-[#F2D76B]/60',
+    red: 'bg-[#EFAED0]/35 text-[#731E43] border-[#EFAED0]/70',
+    pink: 'bg-[#EFAED0]/35 text-[#731E43] border-[#EFAED0]/70',
+    purple: 'bg-[#E8DDF8] text-[#553C9A] border-[#D6BCFA]',
   };
 
   const dotStyles = {
-    gray: 'bg-gray-400',
-    blue: 'bg-blue-500',
-    green: 'bg-emerald-500',
-    yellow: 'bg-amber-500',
-    red: 'bg-rose-500',
-    purple: 'bg-indigo-500',
+    gray: 'bg-[#77746D]',
+    blue: 'bg-[#4871A9]',
+    green: 'bg-[#5D7B38]',
+    yellow: 'bg-[#C68B1A]',
+    red: 'bg-[#C84C4C]',
+    pink: 'bg-[#C84C4C]',
+    purple: 'bg-[#7B58C9]',
   };
 
   const sizes = {
@@ -58,8 +56,8 @@ export const Badge: React.FC<BadgeProps> = ({
         className
       )}
     >
-      {dot && <span className={clsx('w-1.5 h-1.5 rounded-full', dotStyles[variant])} />}
-      {children}
+      {dot && <span className={clsx('w-1.5 h-1.5 rounded-full shrink-0', dotStyles[variant])} />}
+      <span className="truncate">{children}</span>
     </span>
   );
 };
@@ -133,5 +131,3 @@ export const ApprovalBadge: React.FC<{ status: 'pending' | 'approved' | 'rejecte
     </Badge>
   );
 };
-
-
