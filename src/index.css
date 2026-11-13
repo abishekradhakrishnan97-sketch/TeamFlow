@@ -90,3 +90,25 @@ input, select, textarea, table, th, td, hr {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background-color: #77746D;
 }
+
+/* Dashboard-Scoped Dark Theme Overrides */
+html.dashboard-dark,
+body.dashboard-dark {
+  background-color: #141414;
+  color: #F5F3EE;
+}
+
+.dashboard-dark .scrollbar-thin,
+.dashboard-dark.scrollbar-thin {
+  scrollbar-color: #393940 transparent;
+}
+
+.dashboard-dark .scrollbar-thin::-webkit-scrollbar-thumb,
+.dashboard-dark.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #393940;
+}
+
+.dashboard-dark .scrollbar-thin::-webkit-scrollbar-thumb:hover,
+.dashboard-dark.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: #52525C;
+}

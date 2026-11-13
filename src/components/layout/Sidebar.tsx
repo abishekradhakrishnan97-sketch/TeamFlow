@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from '@/services/supabase/auth';
+import { useDashboardTheme } from '@/context/DashboardThemeContext';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -31,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   mobileOpen = false,
   onCloseMobile,
 }) => {
+  const { isDark } = useDashboardTheme();
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
 
@@ -90,7 +92,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={clsx(
-          'bg-sidebar text-[#E0DDD5] h-screen flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out z-40 sticky top-0 border-r-[0.5px] border-black select-none',
+          'h-screen flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out z-40 sticky top-0 border-r-[0.5px] select-none',
+          isDark
+            ? 'bg-[#171719] text-[#F5F3EE] border-r-[#393940]'
+            : 'bg-sidebar text-[#E0DDD5] border-r-black',
           // Desktop collapsed vs expanded on hover
           isExpanded ? 'md:w-64 shadow-2xl' : 'md:w-[72px]',
           // Mobile drawer state
@@ -100,9 +105,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Top Section: Brand & Quick Action */}
         <div className="flex flex-col shrink-0">
           {/* Header */}
-          <div className="h-16 flex items-center px-4 border-b-[0.5px] border-black overflow-hidden">
+          <div
+            className={clsx(
+              'h-16 flex items-center px-4 border-b-[0.5px] overflow-hidden transition-colors duration-200',
+              isDark ? 'border-b-[#393940]' : 'border-b-black'
+            )}
+          >
             <div className="flex items-center gap-3 min-w-0 w-full">
-              <div className="w-9 h-9 rounded-xl bg-[#2A2A2A] border-[0.5px] border-black flex items-center justify-center text-[#FFFDF7] font-bold text-sm tracking-wider shadow-xs shrink-0">
+              <div
+                className={clsx(
+                  'w-9 h-9 rounded-xl border-[0.5px] flex items-center justify-center font-bold text-sm tracking-wider shadow-xs shrink-0 transition-colors',
+                  isDark
+                    ? 'bg-[#222226] border-[#393940] text-[#F5F3EE]'
+                    : 'bg-[#2A2A2A] border-black text-[#FFFDF7]'
+                )}
+              >
                 TF
               </div>
               <div
@@ -112,7 +129,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
               >
                 <h1 className="font-bold text-sm tracking-tight text-[#FFFDF7] truncate">TEAMFLOW</h1>
-                <p className="text-[10px] text-[#8C887E] font-semibold tracking-wider uppercase truncate">
+                <p
+                  className={clsx(
+                    'text-[10px] font-semibold tracking-wider uppercase truncate',
+                    isDark ? 'text-[#85838A]' : 'text-[#8C887E]'
+                  )}
+                >
                   Control Centre
                 </p>
               </div>
@@ -126,7 +148,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               title="Create Quick Request"
               aria-label="Create Quick Request"
               className={clsx(
-                'w-full flex items-center rounded-xl bg-[#F2D76B] text-[#222222] font-semibold text-xs py-2.5 hover:bg-[#ebd05f] active:scale-[0.98] transition-all shadow-sm border-[0.5px] border-black overflow-hidden',
+                'w-full flex items-center rounded-xl bg-[#F2D76B] text-[#222222] font-semibold text-xs py-2.5 hover:bg-[#ebd05f] active:scale-[0.98] transition-all shadow-sm border-[0.5px] overflow-hidden',
+                isDark ? 'border-[#393940]' : 'border-black',
                 isExpanded ? 'justify-start px-3.5 gap-2.5' : 'justify-center px-0'
               )}
             >
@@ -153,7 +176,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   isExpanded ? 'opacity-100 max-h-6' : 'opacity-0 max-h-0'
                 )}
               >
-                <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#66635B]">
+                <p
+                  className={clsx(
+                    'px-3 text-[10px] font-bold uppercase tracking-wider',
+                    isDark ? 'text-[#85838A]' : 'text-[#66635B]'
+                  )}
+                >
                   {section.title}
                 </p>
               </div>
@@ -169,8 +197,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       'flex items-center rounded-xl text-xs font-medium transition-all group relative overflow-hidden',
                       isExpanded ? 'gap-3 px-3 py-2.5' : 'justify-center p-2.5',
                       isActive
-                        ? 'bg-[#2A2A2A] text-[#FFFDF7] font-semibold border-[0.5px] border-black shadow-xs'
-                        : 'text-[#A09C92] hover:text-[#FFFDF7] hover:bg-[#222222]'
+                        ? (isDark
+                            ? 'bg-[#27272B] text-[#F5F3EE] font-semibold border-[0.5px] border-[#393940] shadow-xs'
+                            : 'bg-[#2A2A2A] text-[#FFFDF7] font-semibold border-[0.5px] border-black shadow-xs')
+                        : (isDark
+                            ? 'text-[#B5B2AD] hover:text-[#F5F3EE] hover:bg-[#222226]'
+                            : 'text-[#A09C92] hover:text-[#FFFDF7] hover:bg-[#222222]')
                     )
                   }
                 >
@@ -186,7 +218,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                   {/* Tooltip on collapsed state */}
                   {!isExpanded && (
-                    <span className="absolute left-full ml-3 px-2.5 py-1 bg-[#262626] text-[#FFFDF7] text-[11px] font-medium rounded-md shadow-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity z-50 border-[0.5px] border-black">
+                    <span
+                      className={clsx(
+                        'absolute left-full ml-3 px-2.5 py-1 text-[11px] font-medium rounded-md shadow-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity z-50 border-[0.5px]',
+                        isDark
+                          ? 'bg-[#27272B] text-[#F5F3EE] border-[#393940]'
+                          : 'bg-[#262626] text-[#FFFDF7] border-black'
+                      )}
+                    >
                       {item.label}
                     </span>
                   )}
@@ -197,10 +236,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* Bottom Section: Design Lead User Profile & Sign Out */}
-        <div className="p-3 border-t-[0.5px] border-black shrink-0 bg-[#141414] overflow-hidden">
+        <div
+          className={clsx(
+            'p-3 border-t-[0.5px] shrink-0 overflow-hidden transition-colors duration-200',
+            isDark ? 'bg-[#121214] border-t-[#393940]' : 'bg-[#141414] border-t-black'
+          )}
+        >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-[#EFAED0] text-[#4A152E] font-bold text-xs flex items-center justify-center shrink-0 shadow-xs border-[0.5px] border-black">
+              <div
+                className={clsx(
+                  'w-8 h-8 rounded-full font-bold text-xs flex items-center justify-center shrink-0 shadow-xs border-[0.5px] transition-colors',
+                  isDark
+                    ? 'bg-[#EFAED0]/25 text-[#EFAED0] border-[#EFAED0]/40'
+                    : 'bg-[#EFAED0] text-[#4A152E] border-black'
+                )}
+              >
                 DL
               </div>
               <div
@@ -210,7 +261,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
               >
                 <p className="text-xs font-semibold text-[#FFFDF7] truncate">Design Lead</p>
-                <p className="text-[10px] text-[#8C887E] truncate">Administrator</p>
+                <p
+                  className={clsx(
+                    'text-[10px] truncate',
+                    isDark ? 'text-[#85838A]' : 'text-[#8C887E]'
+                  )}
+                >
+                  Administrator
+                </p>
               </div>
             </div>
             <button
@@ -218,7 +276,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               title="Sign Out"
               aria-label="Sign Out"
               className={clsx(
-                'text-[#8C887E] hover:text-[#EFAED0] p-1.5 rounded-lg hover:bg-[#262626] transition-colors shrink-0',
+                'p-1.5 rounded-lg transition-colors shrink-0',
+                isDark
+                  ? 'text-[#85838A] hover:text-[#EFAED0] hover:bg-[#222226]'
+                  : 'text-[#8C887E] hover:text-[#EFAED0] hover:bg-[#262626]',
                 !isExpanded && 'hidden'
               )}
             >

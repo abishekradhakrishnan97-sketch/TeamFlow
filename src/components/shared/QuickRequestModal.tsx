@@ -7,6 +7,8 @@ import { getProjects, createProject } from '@/services/supabase/projects';
 import { createTask } from '@/services/supabase/tasks';
 import { getEmployees } from '@/services/supabase/employees';
 import { useToast } from '@/store/useAppStore';
+import { useDashboardTheme } from '@/context/DashboardThemeContext';
+import { clsx } from 'clsx';
 import { Zap } from 'lucide-react';
 
 interface QuickRequestModalProps {
@@ -40,6 +42,7 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { isDark } = useDashboardTheme();
   const [loading, setLoading] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -98,15 +101,15 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
 
         toast.success('Quick Request Created', `Created standalone project "${data.title}"`);
       } else {
-        // Link to existing project as a prioritized task
         if (!data.projectId) {
-          toast.error('Validation Error', 'Please select a project to link this request to');
+          toast.error('Selection Missing', 'Please select an existing project to link');
+          setLoading(false);
           return;
         }
 
         await createTask(
           {
-            title: `[Quick Request] ${data.title}`,
+            title: data.title,
             description: data.description,
             project_id: data.projectId,
             priority: data.priority,
@@ -129,6 +132,18 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
     }
   };
 
+  const inputClass = clsx(
+    'w-full px-3.5 py-2 text-sm rounded-xl border-[0.5px] transition-colors focus:outline-none focus:ring-2',
+    isDark
+      ? 'bg-[#27272B] border-[#393940] text-[#F5F3EE] placeholder-[#85838A] focus:ring-[#AFC7E9]'
+      : 'bg-white border-border text-primary focus:ring-accent'
+  );
+
+  const labelClass = clsx(
+    'block text-xs font-semibold uppercase mb-1.5',
+    isDark ? 'text-[#B5B2AD]' : 'text-primary'
+  );
+
   return (
     <Modal
       isOpen={isOpen}
@@ -140,13 +155,13 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Request Title */}
         <div>
-          <label className="block text-xs font-semibold text-primary uppercase mb-1.5">
+          <label className={labelClass}>
             Request Title *
           </label>
           <input
             {...register('title', { required: 'Title is required' })}
             placeholder="e.g. Executive Pitch Deck Reformatting (Slide 1-12)"
-            className="w-full px-3.5 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+            className={inputClass}
           />
           {errors.title && (
             <p className="text-xs text-danger mt-1">{errors.title.message}</p>
@@ -156,12 +171,12 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
         {/* Request Category */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-primary uppercase mb-1.5">
+            <label className={labelClass}>
               Request Type
             </label>
             <select
               {...register('type')}
-              className="w-full px-3 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+              className={inputClass}
             >
               {QUICK_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -172,12 +187,12 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-primary uppercase mb-1.5">
+            <label className={labelClass}>
               Priority
             </label>
             <select
               {...register('priority')}
-              className="w-full px-3 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+              className={inputClass}
             >
               <option value="urgent">🔴 Urgent / Same Day</option>
               <option value="high">🟠 High</option>
@@ -189,16 +204,21 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
 
         {/* Link Mode: Standalone or Link to Existing */}
         <div>
-          <label className="block text-xs font-semibold text-primary uppercase mb-1.5">
+          <label className={labelClass}>
             Destination
           </label>
           <div className="grid grid-cols-2 gap-3">
             <label
-              className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer text-xs font-medium ${
+              className={clsx(
+                'flex items-center gap-2 p-3 rounded-xl border-[0.5px] cursor-pointer text-xs font-medium transition-colors',
                 linkMode === 'standalone'
-                  ? 'border-accent bg-indigo-50/50 text-accent'
-                  : 'border-border text-secondary hover:bg-gray-50'
-              }`}
+                  ? (isDark
+                      ? 'border-[#AFC7E9] bg-[#AFC7E9]/15 text-[#AFC7E9]'
+                      : 'border-accent bg-indigo-50/50 text-accent')
+                  : (isDark
+                      ? 'border-[#393940] text-[#B5B2AD] hover:bg-[#27272B]'
+                      : 'border-border text-secondary hover:bg-gray-50')
+              )}
             >
               <input
                 type="radio"
@@ -210,11 +230,16 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
             </label>
 
             <label
-              className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer text-xs font-medium ${
+              className={clsx(
+                'flex items-center gap-2 p-3 rounded-xl border-[0.5px] cursor-pointer text-xs font-medium transition-colors',
                 linkMode === 'existing'
-                  ? 'border-accent bg-indigo-50/50 text-accent'
-                  : 'border-border text-secondary hover:bg-gray-50'
-              }`}
+                  ? (isDark
+                      ? 'border-[#AFC7E9] bg-[#AFC7E9]/15 text-[#AFC7E9]'
+                      : 'border-accent bg-indigo-50/50 text-accent')
+                  : (isDark
+                      ? 'border-[#393940] text-[#B5B2AD] hover:bg-[#27272B]'
+                      : 'border-border text-secondary hover:bg-gray-50')
+              )}
             >
               <input
                 type="radio"
@@ -229,12 +254,12 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
 
         {linkMode === 'existing' ? (
           <div>
-            <label className="block text-xs font-semibold text-primary uppercase mb-1.5">
+            <label className={labelClass}>
               Select Target Project *
             </label>
             <select
               {...register('projectId')}
-              className="w-full px-3 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+              className={inputClass}
             >
               <option value="">-- Choose Project --</option>
               {projects.map((p) => (
@@ -246,13 +271,13 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
           </div>
         ) : (
           <div>
-            <label className="block text-xs font-semibold text-primary uppercase mb-1.5">
+            <label className={labelClass}>
               Client / Requester (Optional)
             </label>
             <input
               {...register('clientName')}
               placeholder="e.g. CEO Office / Marketing Team"
-              className="w-full px-3.5 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+              className={inputClass}
             />
           </div>
         )}
@@ -260,12 +285,12 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
         {/* Assigned Team Member & Due Date */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-primary uppercase mb-1.5">
+            <label className={labelClass}>
               Assign To
             </label>
             <select
               {...register('assignedEmployeeId')}
-              className="w-full px-3 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+              className={inputClass}
             >
               <option value="">-- Unassigned (Assign Later) --</option>
               {employees.map((e) => (
@@ -277,33 +302,47 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-primary uppercase mb-1.5">
+            <label className={labelClass}>
               Due Date / Deadline
             </label>
             <input
               type="date"
               {...register('dueDate')}
-              className="w-full px-3 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+              className={inputClass}
             />
           </div>
         </div>
 
         {/* Description / Instructions */}
         <div>
-          <label className="block text-xs font-semibold text-primary uppercase mb-1.5">
+          <label className={labelClass}>
             Instructions / Notes
           </label>
           <textarea
             {...register('description')}
             rows={3}
             placeholder="Provide specific guidelines, source file references, or requirements..."
-            className="w-full px-3 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent resize-none"
+            className={clsx(inputClass, 'resize-none')}
           />
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-          <Button variant="secondary" size="md" type="button" onClick={onClose}>
+        <div
+          className={clsx(
+            'flex items-center justify-end gap-3 pt-4 border-t-[0.5px]',
+            isDark ? 'border-t-[#393940]' : 'border-t-border'
+          )}
+        >
+          <Button
+            variant="secondary"
+            size="md"
+            type="button"
+            onClick={onClose}
+            className={clsx(
+              'border-[0.5px]',
+              isDark ? 'bg-[#27272B] hover:bg-[#303036] text-[#F5F3EE] border-[#393940]' : ''
+            )}
+          >
             Cancel
           </Button>
           <Button
@@ -320,4 +359,3 @@ export const QuickRequestModal: React.FC<QuickRequestModalProps> = ({
     </Modal>
   );
 };
-

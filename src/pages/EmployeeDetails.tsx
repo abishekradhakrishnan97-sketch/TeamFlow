@@ -5,7 +5,7 @@ import { Button } from '@/components/shared/Button';
 import { StatusBadge, AttendanceBadge, ApprovalBadge } from '@/components/shared/Badge';
 import { supabase } from '@/services/supabase/client';
 import { getEmployeeProjects } from '@/utils/employeeProjects';
-import { getEmployeeById } from '@/services/supabase/employees';
+import { getEmployeeById, getEmployees } from '@/services/supabase/employees';
 import { getTasks } from '@/services/supabase/tasks';
 import { getProjects } from '@/services/supabase/projects';
 import { getAttendanceByEmployee } from '@/services/supabase/attendance';
@@ -131,22 +131,40 @@ export const EmployeeDetails: React.FC = () => {
         }
       }
 
+      if (!emp) {
+        try {
+          const allEmps = await getEmployees(true);
+          const cleanId = decodeURIComponent(empId).trim().toLowerCase();
+          emp =
+            allEmps.find(
+              (e) =>
+                e.id.toLowerCase() === cleanId ||
+                e.name.toLowerCase() === cleanId ||
+                (e.initials && e.initials.toLowerCase() === cleanId)
+            ) || null;
+        } catch (memErr) {
+          console.warn('In-memory employee lookup fallback:', memErr);
+        }
+      }
+
       if (emp) {
         setEmployee(emp);
       }
 
+      const targetEmpId = emp?.id || empId;
+
       // 2. Fetch all related collections using Promise.allSettled
       // so NO secondary failure blocks displaying the employee profile!
       const results = await Promise.allSettled([
-        getTasks({ employeeId: empId }),
+        getTasks({ employeeId: targetEmpId }),
         getProjects({ includeArchived: true }),
-        getAttendanceByEmployee(empId),
-        getLeaveRecords({ employeeId: empId }),
-        getAttendancePermissions({ employeeId: empId }),
-        getEarlyLogoffs({ employeeId: empId }),
-        getExtendedAvailability({ employeeId: empId }),
-        getExtraWorkRecords({ employeeId: empId }),
-        getAttendanceExtensionsSummary({ employeeId: empId }),
+        getAttendanceByEmployee(targetEmpId),
+        getLeaveRecords({ employeeId: targetEmpId }),
+        getAttendancePermissions({ employeeId: targetEmpId }),
+        getEarlyLogoffs({ employeeId: targetEmpId }),
+        getExtendedAvailability({ employeeId: targetEmpId }),
+        getExtraWorkRecords({ employeeId: targetEmpId }),
+        getAttendanceExtensionsSummary({ employeeId: targetEmpId }),
       ]);
 
       const [
@@ -168,7 +186,7 @@ export const EmployeeDetails: React.FC = () => {
 
       // Robust "Projects Handled" calculation:
       // Includes projects where employee is owner, member, OR has assigned tasks
-      const memberProjects = getEmployeeProjects(empId, loadedProjects, loadedTasks);
+      const memberProjects = getEmployeeProjects(targetEmpId, loadedProjects, loadedTasks);
       setProjects(memberProjects);
 
       if (attRes.status === 'fulfilled') setAttendance(attRes.value || []);

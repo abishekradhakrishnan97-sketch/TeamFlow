@@ -2,6 +2,8 @@ import React from 'react';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { AlertTriangle } from 'lucide-react';
+import { useDashboardTheme } from '@/context/DashboardThemeContext';
+import { clsx } from 'clsx';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -26,18 +28,43 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const { isDark } = useDashboardTheme();
+
   return (
     <Modal isOpen={isOpen} onClose={onCancel} title={title} size="sm">
       <div className="flex items-start gap-3.5">
-        <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
+        <div
+          className={clsx(
+            'w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-[0.5px]',
+            isDark
+              ? 'bg-[#E99A88]/20 text-[#E99A88] border-[#E99A88]/40'
+              : 'bg-rose-50 text-rose-600 border-rose-100'
+          )}
+        >
           <AlertTriangle className="w-5 h-5" />
         </div>
         <div className="flex-1">
-          <p className="text-sm text-secondary leading-relaxed">{message}</p>
+          <p className={clsx('text-sm leading-relaxed', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>
+            {message}
+          </p>
         </div>
       </div>
-      <div className="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-border">
-        <Button variant="secondary" size="sm" onClick={onCancel} disabled={loading}>
+      <div
+        className={clsx(
+          'flex items-center justify-end gap-2.5 mt-6 pt-4 border-t-[0.5px]',
+          isDark ? 'border-t-[#393940]' : 'border-t-border'
+        )}
+      >
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={onCancel}
+          disabled={loading}
+          className={clsx(
+            'border-[0.5px]',
+            isDark ? 'bg-[#27272B] hover:bg-[#303036] text-[#F5F3EE] border-[#393940]' : ''
+          )}
+        >
           {cancelLabel}
         </Button>
         <Button
@@ -52,4 +79,3 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     </Modal>
   );
 };
-

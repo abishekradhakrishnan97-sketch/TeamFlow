@@ -58,3 +58,4 @@ export const DashboardThemeToggle: React.FC<DashboardThemeToggleProps> = ({ clas
     </button>
   );
 };
+

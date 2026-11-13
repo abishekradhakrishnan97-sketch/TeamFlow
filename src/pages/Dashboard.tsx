@@ -334,16 +334,8 @@ export const Dashboard: React.FC = () => {
   }, [extSummary, recentExtended, isDark]);
 
   return (
-    <div
-      className={clsx(
-        'transition-colors duration-200',
-        isDark
-          ? '-m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-4rem)] bg-[#141414] text-[#F5F3EE]'
-          : 'text-primary'
-      )}
-    >
-      <div className="space-y-8">
-        {/* 1. EXECUTIVE OPERATIONAL PULSE BANNER */}
+    <div className="space-y-8">
+      {/* 1. EXECUTIVE OPERATIONAL PULSE BANNER */}
         <div
           className={clsx(
             'rounded-3xl border-[0.5px] p-6 sm:p-8 relative overflow-hidden transition-all duration-200',
@@ -1056,7 +1048,6 @@ export const Dashboard: React.FC = () => {
           <ActivityTimelineView activities={activities} employees={employees} projects={projects} />
         </div>
       </div>
-    </div>
     </div>
   );
 };

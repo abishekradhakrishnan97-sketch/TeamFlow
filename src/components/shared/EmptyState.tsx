@@ -1,5 +1,7 @@
 import React from 'react';
 import { Button } from './Button';
+import { useDashboardTheme } from '@/context/DashboardThemeContext';
+import { clsx } from 'clsx';
 
 interface EmptyStateProps {
   icon: React.ReactNode;
@@ -18,17 +20,34 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   onAction,
   className,
 }) => {
+  const { isDark } = useDashboardTheme();
+
   return (
     <div
-      className={`flex flex-col items-center justify-center p-8 text-center bg-white rounded-xl border border-dashed border-border ${
-        className || ''
-      }`}
+      className={clsx(
+        'flex flex-col items-center justify-center p-8 text-center rounded-2xl border border-dashed transition-colors',
+        isDark
+          ? 'bg-[#1F1F22] border-[#393940] text-[#F5F3EE]'
+          : 'bg-white border-border text-primary',
+        className
+      )}
     >
-      <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-secondary border border-border mb-3">
+      <div
+        className={clsx(
+          'w-12 h-12 rounded-xl flex items-center justify-center border mb-3 transition-colors',
+          isDark
+            ? 'bg-[#27272B] border-[#393940] text-[#AFC7E9]'
+            : 'bg-gray-50 border-border text-secondary'
+        )}
+      >
         {icon}
       </div>
-      <h4 className="text-sm font-semibold text-primary">{title}</h4>
-      <p className="text-xs text-secondary max-w-sm mt-1 mb-4">{description}</p>
+      <h4 className={clsx('text-sm font-semibold', isDark ? 'text-[#F5F3EE]' : 'text-primary')}>
+        {title}
+      </h4>
+      <p className={clsx('text-xs max-w-sm mt-1 mb-4', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>
+        {description}
+      </p>
       {actionLabel && onAction && (
         <Button size="sm" onClick={onAction}>
           {actionLabel}
@@ -37,4 +56,3 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     </div>
   );
 };
-
