@@ -9,10 +9,10 @@ import {
   Layers,
   Clock,
   RotateCcw,
-  AlertCircle,
-  Filter,
 } from 'lucide-react';
 import { CHART_PALETTE } from '@/utils/chartTheme';
+import { useDashboardTheme } from '@/context/DashboardThemeContext';
+import { clsx } from 'clsx';
 
 interface ActivityTimelineViewProps {
   activities: ActivityEvent[];
@@ -27,6 +27,7 @@ export const ActivityTimelineView: React.FC<ActivityTimelineViewProps> = ({
   projects = [],
   className,
 }) => {
+  const { isDark } = useDashboardTheme();
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
 
@@ -85,17 +86,33 @@ export const ActivityTimelineView: React.FC<ActivityTimelineViewProps> = ({
   });
 
   return (
-    <Card className={`p-6 border-[0.5px] border-black bg-surface flex flex-col justify-between ${className || ''}`}>
+    <Card
+      className={clsx(
+        'p-6 border-[0.5px] flex flex-col justify-between',
+        isDark ? 'bg-[#1F1F22] border-[#393940] text-[#F5F3EE]' : 'border-black bg-surface',
+        className
+      )}
+    >
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h3 className="text-base font-bold text-primary flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#AFC7E9]/30 border-[0.5px] border-black flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-[#1E3A8A]" />
+            <h3
+              className={clsx(
+                'text-base font-bold flex items-center gap-2',
+                isDark ? 'text-[#F5F3EE]' : 'text-primary'
+              )}
+            >
+              <div
+                className={clsx(
+                  'w-7 h-7 rounded-lg border-[0.5px] flex items-center justify-center',
+                  isDark ? 'bg-[#AFC7E9]/20 border-[#AFC7E9]/40' : 'bg-[#AFC7E9]/30 border-black'
+                )}
+              >
+                <Sparkles className="w-4 h-4 text-[#AFC7E9]" />
               </div>
               <span>Live Operations Activity Timeline</span>
             </h3>
-            <p className="text-xs text-secondary mt-0.5">
+            <p className={clsx('text-xs mt-0.5', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>
               Audited operational chronology across tasks, reviews, revisions, and permissions
             </p>
           </div>
@@ -105,7 +122,12 @@ export const ActivityTimelineView: React.FC<ActivityTimelineViewProps> = ({
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-2.5 py-1 text-xs bg-[#EEE9DD] border-[0.5px] border-black rounded-lg text-primary font-bold focus:outline-none"
+              className={clsx(
+                'px-2.5 py-1 text-xs border-[0.5px] rounded-lg font-bold focus:outline-none',
+                isDark
+                  ? 'bg-[#27272B] border-[#393940] text-[#F5F3EE]'
+                  : 'bg-[#EEE9DD] border-black text-primary'
+              )}
             >
               <option value="all">All Events</option>
               <option value="completed">Completed</option>
@@ -119,7 +141,12 @@ export const ActivityTimelineView: React.FC<ActivityTimelineViewProps> = ({
               <select
                 value={selectedProjectId}
                 onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="px-2.5 py-1 text-xs bg-[#EEE9DD] border-[0.5px] border-black rounded-lg text-primary font-bold focus:outline-none max-w-[150px] truncate"
+                className={clsx(
+                  'px-2.5 py-1 text-xs border-[0.5px] rounded-lg font-bold focus:outline-none max-w-[150px] truncate',
+                  isDark
+                    ? 'bg-[#27272B] border-[#393940] text-[#F5F3EE]'
+                    : 'bg-[#EEE9DD] border-black text-primary'
+                )}
               >
                 <option value="all">All Projects</option>
                 {projects.map((p) => (
@@ -135,7 +162,7 @@ export const ActivityTimelineView: React.FC<ActivityTimelineViewProps> = ({
         {/* Timeline Items */}
         <div className="space-y-3.5 max-h-[460px] overflow-y-auto scrollbar-thin pr-1 mt-4">
           {filtered.length === 0 ? (
-            <div className="py-12 text-center text-xs text-secondary italic">
+            <div className={clsx('py-12 text-center text-xs italic', isDark ? 'text-[#85838A]' : 'text-secondary')}>
               No matching activity events recorded
             </div>
           ) : (
@@ -148,7 +175,12 @@ export const ActivityTimelineView: React.FC<ActivityTimelineViewProps> = ({
               return (
                 <div
                   key={act.id}
-                  className="p-3 rounded-xl border-[0.5px] border-black/15 bg-[#FFFDF7] hover:bg-[#EEE9DD]/35 transition-all flex items-start gap-3 group"
+                  className={clsx(
+                    'p-3 rounded-xl border-[0.5px] transition-all flex items-start gap-3 group',
+                    isDark
+                      ? 'border-[#393940] bg-[#27272B] hover:bg-[#303036] hover:border-[#4E4E57]'
+                      : 'border-black/15 bg-[#FFFDF7] hover:bg-[#EEE9DD]/35'
+                  )}
                 >
                   <div
                     className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border-[0.5px] border-black/30 shadow-xs"
@@ -159,21 +191,33 @@ export const ActivityTimelineView: React.FC<ActivityTimelineViewProps> = ({
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EEE9DD] text-primary border-[0.5px] border-black/15">
+                      <span
+                        className={clsx(
+                          'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border-[0.5px]',
+                          isDark
+                            ? 'bg-[#303036] text-[#F5F3EE] border-[#393940]'
+                            : 'bg-[#EEE9DD] text-primary border-black/15'
+                        )}
+                      >
                         {marker.badge}
                       </span>
-                      <span className="text-[10px] font-semibold text-secondary">
+                      <span className={clsx('text-[10px] font-semibold', isDark ? 'text-[#85838A]' : 'text-secondary')}>
                         {getRelativeTime(act.created_at)}
                       </span>
                     </div>
 
-                    <p className="text-xs font-semibold text-primary mt-1.5 leading-snug group-hover:text-accent transition-colors">
+                    <p
+                      className={clsx(
+                        'text-xs font-semibold mt-1.5 leading-snug transition-colors',
+                        isDark ? 'text-[#F5F3EE] group-hover:text-[#AFC7E9]' : 'text-primary group-hover:text-accent'
+                      )}
+                    >
                       {act.description}
                     </p>
 
                     {relatedProject && (
-                      <p className="text-[10px] font-medium text-secondary mt-1">
-                        Project: <strong className="text-primary">{relatedProject.name}</strong>
+                      <p className={clsx('text-[10px] font-medium mt-1', isDark ? 'text-[#85838A]' : 'text-secondary')}>
+                        Project: <strong className={isDark ? 'text-[#F5F3EE]' : 'text-primary'}>{relatedProject.name}</strong>
                       </p>
                     )}
                   </div>

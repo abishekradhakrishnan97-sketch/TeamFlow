@@ -4,6 +4,8 @@ import { Employee, Task } from '@/types';
 import { Users, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CHART_PALETTE, getTaskCategory } from '@/utils/chartTheme';
+import { useDashboardTheme } from '@/context/DashboardThemeContext';
+import { clsx } from 'clsx';
 
 interface TeamWorkloadBarProps {
   employees: Employee[];
@@ -13,6 +15,7 @@ interface TeamWorkloadBarProps {
 
 export const TeamWorkloadBar: React.FC<TeamWorkloadBarProps> = ({ employees, tasks, className }) => {
   const navigate = useNavigate();
+  const { isDark } = useDashboardTheme();
 
   const employeeWorkload = employees.map((emp) => {
     const assignedTasks = tasks.filter((t) =>
@@ -62,25 +65,48 @@ export const TeamWorkloadBar: React.FC<TeamWorkloadBarProps> = ({ employees, tas
   employeeWorkload.sort((a, b) => b.activeCount - a.activeCount);
 
   return (
-    <Card className={`p-6 border-[0.5px] border-black bg-surface flex flex-col justify-between ${className || ''}`}>
+    <Card
+      className={clsx(
+        'p-6 border-[0.5px] flex flex-col justify-between',
+        isDark ? 'bg-[#1F1F22] border-[#393940] text-[#F5F3EE]' : 'border-black bg-surface',
+        className
+      )}
+    >
       <div>
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-base font-bold text-primary flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#EFAED0]/30 border-[0.5px] border-black flex items-center justify-center">
-              <Users className="w-4 h-4 text-[#782046]" />
+          <h3
+            className={clsx(
+              'text-base font-bold flex items-center gap-2',
+              isDark ? 'text-[#F5F3EE]' : 'text-primary'
+            )}
+          >
+            <div
+              className={clsx(
+                'w-7 h-7 rounded-lg border-[0.5px] flex items-center justify-center',
+                isDark ? 'bg-[#EFAED0]/20 border-[#EFAED0]/40' : 'bg-[#EFAED0]/30 border-black'
+              )}
+            >
+              <Users className="w-4 h-4 text-[#EFAED0]" />
             </div>
             <span>Team Workload & Cross-Functional Allocation</span>
           </h3>
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-[#EEE9DD] text-primary border-[0.5px] border-black">
+          <span
+            className={clsx(
+              'text-xs font-bold px-2.5 py-1 rounded-full border-[0.5px]',
+              isDark
+                ? 'bg-[#27272B] border-[#393940] text-[#F5F3EE]'
+                : 'bg-[#EEE9DD] text-primary border-black'
+            )}
+          >
             {employees.length} Team Members
           </span>
         </div>
-        <p className="text-xs text-secondary mb-5">
+        <p className={clsx('text-xs mb-5', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>
           Real-time workload distribution to monitor multidisciplinary capacity and identify bottlenecks
         </p>
 
         {employeeWorkload.length === 0 ? (
-          <div className="py-10 text-center text-xs text-secondary italic">
+          <div className={clsx('py-10 text-center text-xs italic', isDark ? 'text-[#85838A]' : 'text-secondary')}>
             No team members registered yet
           </div>
         ) : (
@@ -100,18 +126,35 @@ export const TeamWorkloadBar: React.FC<TeamWorkloadBarProps> = ({ employees, tas
                 <div
                   key={emp.id}
                   onClick={() => navigate(`/team/${emp.id}`)}
-                  className="p-3 rounded-xl border-[0.5px] border-black/20 bg-[#FFFDF7] hover:bg-[#EEE9DD]/35 transition-all cursor-pointer group shadow-xs space-y-2"
+                  className={clsx(
+                    'p-3 rounded-xl border-[0.5px] transition-all cursor-pointer group shadow-xs space-y-2',
+                    isDark
+                      ? 'border-[#393940] bg-[#27272B] hover:bg-[#303036] hover:border-[#4E4E57]'
+                      : 'border-black/20 bg-[#FFFDF7] hover:bg-[#EEE9DD]/35'
+                  )}
                 >
                   <div className="flex items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-[#EEE9DD] text-primary font-bold flex items-center justify-center text-[11px] shrink-0 border-[0.5px] border-black/30">
+                      <div
+                        className={clsx(
+                          'w-7 h-7 rounded-full font-bold flex items-center justify-center text-[11px] shrink-0 border-[0.5px]',
+                          isDark
+                            ? 'bg-[#303036] border-[#4E4E57] text-[#F5F3EE]'
+                            : 'bg-[#EEE9DD] text-primary border-black/30'
+                        )}
+                      >
                         {emp.initials || emp.name.slice(0, 2).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <span className="font-bold text-primary group-hover:text-accent transition-colors truncate block">
+                        <span
+                          className={clsx(
+                            'font-bold truncate block transition-colors',
+                            isDark ? 'text-[#F5F3EE] group-hover:text-[#AFC7E9]' : 'text-primary group-hover:text-accent'
+                          )}
+                        >
                           {emp.name}
                         </span>
-                        <span className="text-[10px] text-secondary truncate block">
+                        <span className={clsx('text-[10px] truncate block', isDark ? 'text-[#85838A]' : 'text-secondary')}>
                           {emp.designation}
                         </span>
                       </div>
@@ -119,28 +162,39 @@ export const TeamWorkloadBar: React.FC<TeamWorkloadBarProps> = ({ employees, tas
 
                     <div className="flex items-center gap-2 text-right shrink-0">
                       {activeCount > 4 ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E99A88]/30 text-[#731E1E] border-[0.5px] border-black/20 inline-flex items-center gap-1">
+                        <span className={clsx(
+                          'px-2 py-0.5 rounded-full text-[10px] font-bold border-[0.5px] inline-flex items-center gap-1',
+                          isDark ? 'bg-[#E99A88]/20 text-[#E99A88] border-[#E99A88]/30' : 'bg-[#E99A88]/30 text-[#731E1E] border-black/20'
+                        )}>
                           <AlertCircle className="w-2.5 h-2.5" /> High Load
                         </span>
                       ) : activeCount === 0 ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#A9BB78]/30 text-[#2D3E16] border-[0.5px] border-black/20 inline-flex items-center gap-1">
+                        <span className={clsx(
+                          'px-2 py-0.5 rounded-full text-[10px] font-bold border-[0.5px] inline-flex items-center gap-1',
+                          isDark ? 'bg-[#A9BB78]/20 text-[#A9BB78] border-[#A9BB78]/30' : 'bg-[#A9BB78]/30 text-[#2D3E16] border-black/20'
+                        )}>
                           <CheckCircle2 className="w-2.5 h-2.5" /> Available
                         </span>
                       ) : null}
 
-                      <span className="font-bold text-primary text-xs">
+                      <span className={clsx('font-bold text-xs', isDark ? 'text-[#F5F3EE]' : 'text-primary')}>
                         {activeCount} active
                       </span>
-                      <span className="text-[11px] text-secondary font-medium">
+                      <span className={clsx('text-[11px] font-medium', isDark ? 'text-[#85838A]' : 'text-secondary')}>
                         ({completedCount} done)
                       </span>
                     </div>
                   </div>
 
                   {/* Horizontal Stacked Bar */}
-                  <div className="w-full h-3 rounded-full bg-[#EEE9DD] overflow-hidden flex border-[0.5px] border-black/20">
+                  <div
+                    className={clsx(
+                      'w-full h-3 rounded-full overflow-hidden flex border-[0.5px]',
+                      isDark ? 'bg-[#101010] border-[#393940]' : 'bg-[#EEE9DD] border-black/20'
+                    )}
+                  >
                     {activeCount === 0 ? (
-                      <div className="w-full h-full bg-[#EEE9DD] flex items-center justify-center text-[9px] text-secondary font-medium">
+                      <div className={clsx('w-full h-full flex items-center justify-center text-[9px] font-medium', isDark ? 'text-[#85838A]' : 'text-secondary')}>
                         No active tasks
                       </div>
                     ) : (
@@ -191,26 +245,31 @@ export const TeamWorkloadBar: React.FC<TeamWorkloadBarProps> = ({ employees, tas
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-between flex-wrap gap-2 pt-4 mt-2 border-t-[0.5px] border-black/15 text-[11px]">
+      <div
+        className={clsx(
+          'flex items-center justify-between flex-wrap gap-2 pt-4 mt-2 border-t-[0.5px] text-[11px]',
+          isDark ? 'border-[#393940]' : 'border-black/15'
+        )}
+      >
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.pink.base }} />
-          <span className="text-secondary font-medium">Design</span>
+          <span className={clsx('font-medium', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>Design</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.blue.base }} />
-          <span className="text-secondary font-medium">Dev</span>
+          <span className={clsx('font-medium', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>Dev</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.teal.base }} />
-          <span className="text-secondary font-medium">Testing</span>
+          <span className={clsx('font-medium', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>Testing</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.purple.base }} />
-          <span className="text-secondary font-medium">Docs</span>
+          <span className={clsx('font-medium', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>Docs</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.yellow.base }} />
-          <span className="text-secondary font-medium">Other</span>
+          <span className={clsx('font-medium', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>Other</span>
         </div>
       </div>
     </Card>

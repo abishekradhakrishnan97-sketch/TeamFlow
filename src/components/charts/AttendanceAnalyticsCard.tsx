@@ -6,6 +6,8 @@ import { Clock, Moon, ChevronRight } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { CHART_PALETTE, ChartTooltip } from '@/utils/chartTheme';
+import { useDashboardTheme } from '@/context/DashboardThemeContext';
+import { clsx } from 'clsx';
 
 interface AttendanceAnalyticsCardProps {
   todayAttendance: AttendanceRecord[];
@@ -25,6 +27,7 @@ export const AttendanceAnalyticsCard: React.FC<AttendanceAnalyticsCardProps> = (
   className,
 }) => {
   const navigate = useNavigate();
+  const { isDark } = useDashboardTheme();
 
   // Attendance breakdown
   const presentCount = todayAttendance.filter(
@@ -44,7 +47,7 @@ export const AttendanceAnalyticsCard: React.FC<AttendanceAnalyticsCardProps> = (
     {
       name: 'Late Standby',
       hours: Number((extSummary.extendedStandbyMinutes / 60).toFixed(1)),
-      fill: CHART_PALETTE.charcoal.light,
+      fill: isDark ? '#303036' : CHART_PALETTE.charcoal.light,
     },
     {
       name: 'Saturday',
@@ -67,36 +70,66 @@ export const AttendanceAnalyticsCard: React.FC<AttendanceAnalyticsCardProps> = (
   ).toFixed(1);
 
   return (
-    <Card className={`p-6 border-[0.5px] border-black bg-surface flex flex-col justify-between ${className || ''}`}>
+    <Card
+      className={clsx(
+        'p-6 border-[0.5px] flex flex-col justify-between',
+        isDark ? 'bg-[#1F1F22] border-[#393940] text-[#F5F3EE]' : 'border-black bg-surface',
+        className
+      )}
+    >
       <div>
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#AFC7E9]/30 border-[0.5px] border-black flex items-center justify-center">
-              <Clock className="w-4 h-4 text-[#1E3A8A]" />
+            <div
+              className={clsx(
+                'w-7 h-7 rounded-lg border-[0.5px] flex items-center justify-center',
+                isDark ? 'bg-[#AFC7E9]/20 border-[#AFC7E9]/40' : 'bg-[#AFC7E9]/30 border-black'
+              )}
+            >
+              <Clock className="w-4 h-4 text-[#AFC7E9]" />
             </div>
-            <h3 className="text-base font-bold text-primary">Attendance & Extra Hours</h3>
+            <h3 className={clsx('text-base font-bold', isDark ? 'text-[#F5F3EE]' : 'text-primary')}>
+              Attendance & Extra Hours
+            </h3>
           </div>
           <input
             type="month"
             value={selectedMonth}
             onChange={(e) => onMonthChange(e.target.value)}
-            className="text-[11px] font-bold px-2 py-1 rounded-lg bg-[#EEE9DD] border-[0.5px] border-black text-primary focus:outline-none"
+            className={clsx(
+              'text-[11px] font-bold px-2 py-1 rounded-lg border-[0.5px] focus:outline-none',
+              isDark
+                ? 'bg-[#27272B] border-[#393940] text-[#F5F3EE]'
+                : 'bg-[#EEE9DD] border-black text-primary'
+            )}
           />
         </div>
-        <p className="text-xs text-secondary mb-4">
+        <p className={clsx('text-xs mb-4', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>
           Today's operational presence combined with month-to-date overtime and weekend sessions
         </p>
 
         {/* Today's Presence Segmented Bar */}
-        <div className="p-3.5 rounded-xl bg-[#FFFDF7] border-[0.5px] border-black/20 mb-5 space-y-2">
+        <div
+          className={clsx(
+            'p-3.5 rounded-xl border-[0.5px] mb-5 space-y-2 transition-colors',
+            isDark ? 'bg-[#27272B] border-[#393940]' : 'bg-[#FFFDF7] border-black/20'
+          )}
+        >
           <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-primary">Today's Presence Register</span>
-            <span className="font-extrabold text-primary">
+            <span className={clsx('font-bold', isDark ? 'text-[#F5F3EE]' : 'text-primary')}>
+              Today's Presence Register
+            </span>
+            <span className={clsx('font-extrabold', isDark ? 'text-[#F5F3EE]' : 'text-primary')}>
               {presentCount} / {activeEmployeeCount} Present
             </span>
           </div>
 
-          <div className="w-full h-3 rounded-full bg-[#EEE9DD] overflow-hidden flex border-[0.5px] border-black/20">
+          <div
+            className={clsx(
+              'w-full h-3 rounded-full overflow-hidden flex border-[0.5px]',
+              isDark ? 'bg-[#101010] border-[#393940]' : 'bg-[#EEE9DD] border-black/20'
+            )}
+          >
             {presentCount > 0 && (
               <div
                 style={{
@@ -139,26 +172,31 @@ export const AttendanceAnalyticsCard: React.FC<AttendanceAnalyticsCardProps> = (
             )}
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-secondary font-medium pt-1">
+          <div
+            className={clsx(
+              'flex items-center justify-between text-[11px] font-medium pt-1',
+              isDark ? 'text-[#B5B2AD]' : 'text-secondary'
+            )}
+          >
             <span className="inline-flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_PALETTE.green.base }} />
-              Present: <strong>{presentCount}</strong>
+              Present: <strong className={isDark ? 'text-[#F5F3EE]' : 'text-primary'}>{presentCount}</strong>
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_PALETTE.blue.base }} />
-              Leave: <strong>{leaveCount}</strong>
+              Leave: <strong className={isDark ? 'text-[#F5F3EE]' : 'text-primary'}>{leaveCount}</strong>
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_PALETTE.yellow.base }} />
-              Permissions: <strong>{halfDayCount}</strong>
+              Permissions: <strong className={isDark ? 'text-[#F5F3EE]' : 'text-primary'}>{halfDayCount}</strong>
             </span>
           </div>
         </div>
 
         {/* Extra Hours Bar Chart */}
         <div className="space-y-1 mb-2">
-          <div className="flex items-center justify-between text-xs font-bold text-primary">
-            <span className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between text-xs font-bold">
+            <span className={clsx('flex items-center gap-1.5', isDark ? 'text-[#F5F3EE]' : 'text-primary')}>
               <Moon className="w-3.5 h-3.5 text-accent" />
               <span>Overtime & Weekend Work ({selectedMonth})</span>
             </span>
@@ -171,12 +209,12 @@ export const AttendanceAnalyticsCard: React.FC<AttendanceAnalyticsCardProps> = (
             <BarChart data={extraHoursData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
               <XAxis
                 dataKey="name"
-                tick={{ fill: '#343434', fontSize: 11, fontWeight: 600 }}
-                axisLine={{ stroke: '#000000', strokeWidth: 0.5 }}
+                tick={{ fill: isDark ? '#B5B2AD' : '#343434', fontSize: 11, fontWeight: 600 }}
+                axisLine={{ stroke: isDark ? '#393940' : '#000000', strokeWidth: 0.5 }}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fill: '#77746D', fontSize: 11 }}
+                tick={{ fill: isDark ? '#85838A' : '#77746D', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -194,7 +232,7 @@ export const AttendanceAnalyticsCard: React.FC<AttendanceAnalyticsCardProps> = (
                   <Cell
                     key={`extra-cell-${index}`}
                     fill={entry.fill}
-                    stroke="#000000"
+                    stroke={isDark ? '#1F1F22' : '#000000'}
                     strokeWidth={0.5}
                   />
                 ))}
@@ -204,14 +242,24 @@ export const AttendanceAnalyticsCard: React.FC<AttendanceAnalyticsCardProps> = (
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-4 border-t-[0.5px] border-black/15 text-xs">
-        <span className="text-secondary font-medium">
+      <div
+        className={clsx(
+          'flex items-center justify-between pt-4 border-t-[0.5px] text-xs',
+          isDark ? 'border-[#393940]' : 'border-black/15'
+        )}
+      >
+        <span className={clsx('font-medium', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>
           Authorizations:{' '}
-          <strong className="text-primary">{extSummary.pendingApprovalsCount} pending</strong>
+          <strong className={isDark ? 'text-[#F5F3EE]' : 'text-primary'}>
+            {extSummary.pendingApprovalsCount} pending
+          </strong>
         </span>
         <button
           onClick={() => navigate('/attendance')}
-          className="text-xs text-primary font-bold hover:underline inline-flex items-center gap-1"
+          className={clsx(
+            'text-xs font-bold hover:underline inline-flex items-center gap-1',
+            isDark ? 'text-[#AFC7E9]' : 'text-primary'
+          )}
         >
           <span>Attendance Register</span>
           <ChevronRight className="w-3.5 h-3.5" />

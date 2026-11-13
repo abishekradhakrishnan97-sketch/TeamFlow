@@ -5,6 +5,8 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 import { TrendingUp } from 'lucide-react';
 import { CHART_PALETTE, ChartTooltip } from '@/utils/chartTheme';
 import { format, subDays, parseISO, isSameDay } from 'date-fns';
+import { useDashboardTheme } from '@/context/DashboardThemeContext';
+import { clsx } from 'clsx';
 
 interface ActivityTrendChartProps {
   activities: ActivityEvent[];
@@ -17,6 +19,8 @@ export const ActivityTrendChart: React.FC<ActivityTrendChartProps> = ({
   tasks,
   className,
 }) => {
+  const { isDark } = useDashboardTheme();
+
   // Generate daily points for the past 7 days
   const trendData = useMemo(() => {
     const points = [];
@@ -74,20 +78,43 @@ export const ActivityTrendChart: React.FC<ActivityTrendChartProps> = ({
   const totalWeeklyCompleted = trendData.reduce((acc, p) => acc + p.Completed, 0);
 
   return (
-    <Card className={`p-6 border-[0.5px] border-black bg-surface flex flex-col justify-between ${className || ''}`}>
+    <Card
+      className={clsx(
+        'p-6 border-[0.5px] flex flex-col justify-between',
+        isDark ? 'bg-[#1F1F22] border-[#393940] text-[#F5F3EE]' : 'border-black bg-surface',
+        className
+      )}
+    >
       <div>
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-base font-bold text-primary flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#AFC7E9]/30 border-[0.5px] border-black flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-[#1E3A8A]" />
+          <h3
+            className={clsx(
+              'text-base font-bold flex items-center gap-2',
+              isDark ? 'text-[#F5F3EE]' : 'text-primary'
+            )}
+          >
+            <div
+              className={clsx(
+                'w-7 h-7 rounded-lg border-[0.5px] flex items-center justify-center',
+                isDark ? 'bg-[#AFC7E9]/20 border-[#AFC7E9]/40' : 'bg-[#AFC7E9]/30 border-black'
+              )}
+            >
+              <TrendingUp className="w-4 h-4 text-[#AFC7E9]" />
             </div>
             <span>Velocity & Activity Progression (Last 7 Days)</span>
           </h3>
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-[#EEE9DD] text-primary border-[0.5px] border-black">
+          <span
+            className={clsx(
+              'text-xs font-bold px-2.5 py-1 rounded-full border-[0.5px]',
+              isDark
+                ? 'bg-[#27272B] border-[#393940] text-[#F5F3EE]'
+                : 'bg-[#EEE9DD] text-primary border-black'
+            )}
+          >
             Past 7 Days
           </span>
         </div>
-        <p className="text-xs text-secondary mb-5">
+        <p className={clsx('text-xs mb-5', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>
           Daily comparative velocity between tasks generated, deliverable milestones, and operations events
         </p>
 
@@ -108,16 +135,21 @@ export const ActivityTrendChart: React.FC<ActivityTrendChartProps> = ({
                   <stop offset="95%" stopColor={CHART_PALETTE.blue.base} stopOpacity={0.05} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#000000" strokeOpacity={0.08} vertical={false} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={isDark ? '#393940' : '#000000'}
+                strokeOpacity={isDark ? 0.35 : 0.08}
+                vertical={false}
+              />
               <XAxis
                 dataKey="day"
-                tick={{ fill: '#343434', fontSize: 11, fontWeight: 600 }}
-                axisLine={{ stroke: '#000000', strokeWidth: 0.5 }}
+                tick={{ fill: isDark ? '#B5B2AD' : '#343434', fontSize: 11, fontWeight: 600 }}
+                axisLine={{ stroke: isDark ? '#393940' : '#000000', strokeWidth: 0.5 }}
                 tickLine={false}
               />
               <YAxis
                 allowDecimals={false}
-                tick={{ fill: '#77746D', fontSize: 11 }}
+                tick={{ fill: isDark ? '#85838A' : '#77746D', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -164,20 +196,25 @@ export const ActivityTrendChart: React.FC<ActivityTrendChartProps> = ({
       </div>
 
       {/* Summary stats */}
-      <div className="flex items-center justify-between flex-wrap gap-2 pt-4 mt-2 border-t-[0.5px] border-black/15 text-xs">
+      <div
+        className={clsx(
+          'flex items-center justify-between flex-wrap gap-2 pt-4 mt-2 border-t-[0.5px] text-xs',
+          isDark ? 'border-[#393940]' : 'border-black/15'
+        )}
+      >
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.pink.base }} />
-          <span className="text-secondary font-medium">Tasks Created:</span>
-          <span className="font-bold text-primary">{totalWeeklyCreated}</span>
+          <span className={clsx('font-medium', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>Tasks Created:</span>
+          <span className={clsx('font-bold', isDark ? 'text-[#F5F3EE]' : 'text-primary')}>{totalWeeklyCreated}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.green.base }} />
-          <span className="text-secondary font-medium">Tasks Completed:</span>
-          <span className="font-bold text-primary">{totalWeeklyCompleted}</span>
+          <span className={clsx('font-medium', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>Tasks Completed:</span>
+          <span className={clsx('font-bold', isDark ? 'text-[#F5F3EE]' : 'text-primary')}>{totalWeeklyCompleted}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_PALETTE.blue.base }} />
-          <span className="text-secondary font-medium">Operations Events</span>
+          <span className={clsx('font-medium', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>Operations Events</span>
         </div>
       </div>
     </Card>

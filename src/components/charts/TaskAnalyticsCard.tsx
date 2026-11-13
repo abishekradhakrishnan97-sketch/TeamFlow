@@ -5,6 +5,8 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 
 import { CheckSquare, AlertTriangle, Clock } from 'lucide-react';
 import { CHART_PALETTE, ChartTooltip } from '@/utils/chartTheme';
 import { todayIST } from '@/utils/dates';
+import { useDashboardTheme } from '@/context/DashboardThemeContext';
+import { clsx } from 'clsx';
 
 interface TaskAnalyticsCardProps {
   tasks: Task[];
@@ -12,6 +14,7 @@ interface TaskAnalyticsCardProps {
 }
 
 export const TaskAnalyticsCard: React.FC<TaskAnalyticsCardProps> = ({ tasks, className }) => {
+  const { isDark } = useDashboardTheme();
   const today = todayIST();
 
   const analytics = useMemo(() => {
@@ -45,7 +48,7 @@ export const TaskAnalyticsCard: React.FC<TaskAnalyticsCardProps> = ({ tasks, cla
       { name: 'On Schedule', count: onTimeCount, fill: CHART_PALETTE.green.base },
       { name: 'Overdue', count: overdueCount, fill: CHART_PALETTE.coral.base },
       { name: 'Completed', count: completedCount, fill: CHART_PALETTE.blue.base },
-      { name: 'No Due Date', count: noDueCount, fill: CHART_PALETTE.charcoal.light },
+      { name: 'No Due Date', count: noDueCount, fill: isDark ? '#303036' : CHART_PALETTE.charcoal.light },
     ];
 
     return {
@@ -59,53 +62,96 @@ export const TaskAnalyticsCard: React.FC<TaskAnalyticsCardProps> = ({ tasks, cla
       low,
       statusData,
     };
-  }, [tasks, today]);
+  }, [tasks, today, isDark]);
 
   return (
-    <Card className={`p-6 border-[0.5px] border-black bg-surface flex flex-col justify-between ${className || ''}`}>
+    <Card
+      className={clsx(
+        'p-6 border-[0.5px] flex flex-col justify-between',
+        isDark ? 'bg-[#1F1F22] border-[#393940] text-[#F5F3EE]' : 'border-black bg-surface',
+        className
+      )}
+    >
       <div>
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-base font-bold text-primary flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#A9BB78]/30 border-[0.5px] border-black flex items-center justify-center">
-              <CheckSquare className="w-4 h-4 text-[#2D3E16]" />
+          <h3
+            className={clsx(
+              'text-base font-bold flex items-center gap-2',
+              isDark ? 'text-[#F5F3EE]' : 'text-primary'
+            )}
+          >
+            <div
+              className={clsx(
+                'w-7 h-7 rounded-lg border-[0.5px] flex items-center justify-center',
+                isDark ? 'bg-[#A9BB78]/20 border-[#A9BB78]/40' : 'bg-[#A9BB78]/30 border-black'
+              )}
+            >
+              <CheckSquare className="w-4 h-4 text-[#A9BB78]" />
             </div>
             <span>Task Health & Deadline Adherence</span>
           </h3>
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-[#EEE9DD] text-primary border-[0.5px] border-black">
+          <span
+            className={clsx(
+              'text-xs font-bold px-2.5 py-1 rounded-full border-[0.5px]',
+              isDark
+                ? 'bg-[#27272B] border-[#393940] text-[#F5F3EE]'
+                : 'bg-[#EEE9DD] text-primary border-black'
+            )}
+          >
             {tasks.length} Total
           </span>
         </div>
-        <p className="text-xs text-secondary mb-4">
+        <p className={clsx('text-xs mb-4', isDark ? 'text-[#B5B2AD]' : 'text-secondary')}>
           Tracking overdue tasks against on-schedule deliverables and priority urgency
         </p>
 
         {/* Overdue vs On-Time Quick Comparison Pills */}
         <div className="grid grid-cols-2 gap-3 mb-5">
-          <div className="p-3.5 rounded-xl bg-[#FCF1EF] border-[0.5px] border-black/20 flex items-center justify-between">
+          <div
+            className={clsx(
+              'p-3.5 rounded-xl border-[0.5px] flex items-center justify-between transition-colors',
+              isDark ? 'bg-[#E99A88]/15 border-[#E99A88]/30' : 'bg-[#FCF1EF] border-black/20'
+            )}
+          >
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#CE7864] block">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#E99A88] block">
                 Overdue Tasks
               </span>
-              <span className="text-2xl font-black text-[#CE7864] leading-tight">
+              <span className="text-2xl font-black text-[#E99A88] leading-tight">
                 {analytics.overdueCount}
               </span>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-[#E99A88]/30 flex items-center justify-center border-[0.5px] border-black/20">
-              <AlertTriangle className="w-4 h-4 text-[#CE7864]" />
+            <div
+              className={clsx(
+                'w-8 h-8 rounded-lg flex items-center justify-center border-[0.5px]',
+                isDark ? 'bg-[#E99A88]/20 border-[#E99A88]/30' : 'bg-[#E99A88]/30 border-black/20'
+              )}
+            >
+              <AlertTriangle className="w-4 h-4 text-[#E99A88]" />
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-[#F2F7EC] border-[0.5px] border-black/20 flex items-center justify-between">
+          <div
+            className={clsx(
+              'p-3.5 rounded-xl border-[0.5px] flex items-center justify-between transition-colors',
+              isDark ? 'bg-[#A9BB78]/15 border-[#A9BB78]/30' : 'bg-[#F2F7EC] border-black/20'
+            )}
+          >
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#7A8E45] block">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#A9BB78] block">
                 On Schedule
               </span>
-              <span className="text-2xl font-black text-[#7A8E45] leading-tight">
+              <span className="text-2xl font-black text-[#A9BB78] leading-tight">
                 {analytics.onTimeCount}
               </span>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-[#A9BB78]/30 flex items-center justify-center border-[0.5px] border-black/20">
-              <Clock className="w-4 h-4 text-[#7A8E45]" />
+            <div
+              className={clsx(
+                'w-8 h-8 rounded-lg flex items-center justify-center border-[0.5px]',
+                isDark ? 'bg-[#A9BB78]/20 border-[#A9BB78]/30' : 'bg-[#A9BB78]/30 border-black/20'
+              )}
+            >
+              <Clock className="w-4 h-4 text-[#A9BB78]" />
             </div>
           </div>
         </div>
@@ -122,7 +168,7 @@ export const TaskAnalyticsCard: React.FC<TaskAnalyticsCardProps> = ({ tasks, cla
               <YAxis
                 type="category"
                 dataKey="name"
-                tick={{ fill: '#343434', fontSize: 11, fontWeight: 600 }}
+                tick={{ fill: isDark ? '#B5B2AD' : '#343434', fontSize: 11, fontWeight: 600 }}
                 axisLine={false}
                 tickLine={false}
                 width={95}
@@ -141,7 +187,7 @@ export const TaskAnalyticsCard: React.FC<TaskAnalyticsCardProps> = ({ tasks, cla
                   <Cell
                     key={`health-bar-${index}`}
                     fill={entry.fill}
-                    stroke="#000000"
+                    stroke={isDark ? '#1F1F22' : '#000000'}
                     strokeWidth={0.5}
                   />
                 ))}
@@ -152,31 +198,56 @@ export const TaskAnalyticsCard: React.FC<TaskAnalyticsCardProps> = ({ tasks, cla
       </div>
 
       {/* Priority Urgency Strip */}
-      <div className="pt-4 border-t-[0.5px] border-black/15 text-xs">
+      <div
+        className={clsx(
+          'pt-4 border-t-[0.5px] text-xs',
+          isDark ? 'border-[#393940]' : 'border-black/15'
+        )}
+      >
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-secondary uppercase tracking-wider">
+          <span className={clsx('text-[11px] font-bold uppercase tracking-wider', isDark ? 'text-[#85838A]' : 'text-secondary')}>
             Active Priority Distribution
           </span>
-          <span className="text-[11px] font-bold text-primary">
+          <span className={clsx('text-[11px] font-bold', isDark ? 'text-[#F5F3EE]' : 'text-primary')}>
             {analytics.urgent + analytics.high + analytics.medium + analytics.low} Active
           </span>
         </div>
         <div className="grid grid-cols-4 gap-2 text-center">
-          <div className="p-1.5 rounded-lg bg-[#FCF1EF] border-[0.5px] border-black/15">
-            <span className="block text-[10px] font-semibold text-secondary">Urgent</span>
-            <span className="text-xs font-black text-[#CE7864]">{analytics.urgent}</span>
+          <div
+            className={clsx(
+              'p-1.5 rounded-lg border-[0.5px]',
+              isDark ? 'bg-[#27272B] border-[#393940]' : 'bg-[#FCF1EF] border-black/15'
+            )}
+          >
+            <span className={clsx('block text-[10px] font-semibold', isDark ? 'text-[#85838A]' : 'text-secondary')}>Urgent</span>
+            <span className="text-xs font-black text-[#E99A88]">{analytics.urgent}</span>
           </div>
-          <div className="p-1.5 rounded-lg bg-[#FDF1F7] border-[0.5px] border-black/15">
-            <span className="block text-[10px] font-semibold text-secondary">High</span>
-            <span className="text-xs font-black text-[#D688AB]">{analytics.high}</span>
+          <div
+            className={clsx(
+              'p-1.5 rounded-lg border-[0.5px]',
+              isDark ? 'bg-[#27272B] border-[#393940]' : 'bg-[#FDF1F7] border-black/15'
+            )}
+          >
+            <span className={clsx('block text-[10px] font-semibold', isDark ? 'text-[#85838A]' : 'text-secondary')}>High</span>
+            <span className="text-xs font-black text-[#EFAED0]">{analytics.high}</span>
           </div>
-          <div className="p-1.5 rounded-lg bg-[#FEF9E7] border-[0.5px] border-black/15">
-            <span className="block text-[10px] font-semibold text-secondary">Medium</span>
-            <span className="text-xs font-black text-[#D8BC44]">{analytics.medium}</span>
+          <div
+            className={clsx(
+              'p-1.5 rounded-lg border-[0.5px]',
+              isDark ? 'bg-[#27272B] border-[#393940]' : 'bg-[#FEF9E7] border-black/15'
+            )}
+          >
+            <span className={clsx('block text-[10px] font-semibold', isDark ? 'text-[#85838A]' : 'text-secondary')}>Medium</span>
+            <span className="text-xs font-black text-[#F2D76B]">{analytics.medium}</span>
           </div>
-          <div className="p-1.5 rounded-lg bg-[#F1F6FC] border-[0.5px] border-black/15">
-            <span className="block text-[10px] font-semibold text-secondary">Low</span>
-            <span className="text-xs font-black text-[#8AAFD8]">{analytics.low}</span>
+          <div
+            className={clsx(
+              'p-1.5 rounded-lg border-[0.5px]',
+              isDark ? 'bg-[#27272B] border-[#393940]' : 'bg-[#F1F6FC] border-black/15'
+            )}
+          >
+            <span className={clsx('block text-[10px] font-semibold', isDark ? 'text-[#85838A]' : 'text-secondary')}>Low</span>
+            <span className="text-xs font-black text-[#AFC7E9]">{analytics.low}</span>
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { Layout } from '@/components/layout/Layout';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
+import { DashboardThemeProvider } from '@/context/DashboardThemeContext';
 
 // Pages
 import { Login } from '@/pages/Login';
@@ -36,7 +37,14 @@ export const App: React.FC = () => {
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <DashboardThemeProvider>
+                    <Dashboard />
+                  </DashboardThemeProvider>
+                }
+              />
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:id" element={<ProjectDetails />} />
               <Route path="/tasks" element={<Tasks />} />
